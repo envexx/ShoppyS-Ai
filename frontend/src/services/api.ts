@@ -1,7 +1,7 @@
 // Use local backend in development, production backend in production
 const API_BASE_URL = import.meta.env.DEV 
   ? 'http://localhost:3000/api' 
-  : 'https://shoppy-s-ai-apc2.vercel.app/api';
+  : 'https://shoppy-s-ai-backend.vercel.app/api';
   
 
 interface AuthResponse {

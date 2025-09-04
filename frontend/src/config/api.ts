@@ -4,7 +4,7 @@ export const API_CONFIG = {
   // Production: deployed backend
   BASE_URL: import.meta.env.DEV 
     ? 'http://localhost:3000/api' 
-    : 'https://shoppy-s-ai-apc2.vercel.app/api',
+    : 'https://shoppy-s-ai-backend.vercel.app/api',
   
   // Timeout untuk request
   TIMEOUT: 10000,
