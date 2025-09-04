@@ -93,6 +93,8 @@ export class ShopifyService {
    */
   async searchProducts(searchText: string, limit: number = 5): Promise<ShopifyProduct[]> {
     try {
+      console.log(`🔍 Starting Shopify search for: "${searchText}" with limit: ${limit}`);
+      
       const query = `
         query searchProducts($searchText: String!, $limit: Int!) {
           products(first: $limit, query: $searchText) {
@@ -143,6 +145,8 @@ export class ShopifyService {
       
       for (const searchQuery of searchQueries) {
         try {
+          console.log(`🔍 Executing Shopify query: "${searchQuery}"`);
+          
           const variables = {
             searchText: searchQuery,
             limit: Math.ceil(limit / searchQueries.length) // Distribute limit across queries
@@ -160,6 +164,7 @@ export class ShopifyService {
 
           const products = response.data.data.products.edges.map((edge: any) => edge.node);
           console.log(`✅ Shopify found ${products.length} products with query: "${searchQuery}"`);
+          console.log(`📦 Product titles:`, products.map((p: any) => p.title));
           
           // Add unique products only
           products.forEach((product: ShopifyProduct) => {
@@ -170,21 +175,22 @@ export class ShopifyService {
           
           // If we have enough products, stop searching
           if (allProducts.length >= limit) {
+            console.log(`✅ Reached limit of ${limit} products, stopping search`);
             break;
           }
         } catch (error) {
-          console.warn(`Failed to search with query "${searchQuery}":`, error);
+          console.warn(`❌ Failed to search with query "${searchQuery}":`, error);
           continue; // Try next query
         }
       }
       
       // Limit the results to the requested limit
       const finalProducts = allProducts.slice(0, limit);
-      console.log(`✅ Shopify total found ${finalProducts.length} unique products`);
+      console.log(`✅ Shopify total found ${finalProducts.length} unique products:`, finalProducts.map(p => p.title));
       
       return finalProducts;
     } catch (error) {
-      console.error('Error searching products:', error);
+      console.error('❌ Error searching products:', error);
       throw new Error('Failed to search products');
     }
   }

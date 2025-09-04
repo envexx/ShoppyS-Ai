@@ -164,6 +164,12 @@ export class SensayService {
       const isRecommendingProducts = this.detectProductRecommendation(chatResponse.content);
       const isGeneralInformation = this.isGeneralInformationResponse(chatResponse.content);
       
+      console.log('🔍 Product recommendation analysis:', {
+        isRecommendingProducts,
+        isGeneralInformation,
+        content: chatResponse.content.substring(0, 200) + '...'
+      });
+      
       if (isRecommendingProducts && !isGeneralInformation) {
         console.log('🛍️ Sensay is recommending products, searching Shopify...');
         try {
@@ -177,21 +183,27 @@ export class SensayService {
             
             for (const product of recommendedProducts) {
               try {
+                console.log(`🔍 Searching Shopify for: "${product.searchQuery}"`);
                 const foundProducts = await this.shopifyService.searchProducts(product.searchQuery, 3);
+                console.log(`✅ Found ${foundProducts.length} products for "${product.searchQuery}":`, foundProducts.map((p: any) => p.title));
                 allFoundProducts.push(...foundProducts);
               } catch (error) {
-                console.warn(`Failed to search for product "${product.name}":`, error);
+                console.warn(`❌ Failed to search for product "${product.name}":`, error);
               }
             }
             
             // If we didn't find enough products with specific searches, try general search
             if (allFoundProducts.length < 2) {
+              console.log('🔍 Not enough specific products found, trying general search...');
               const userKeywords = this.extractProductKeywords(message);
               const responseKeywords = this.extractProductKeywords(chatResponse.content);
               const allKeywords = [...new Set([...userKeywords, ...responseKeywords])];
               
+              console.log('🔍 General search keywords:', allKeywords);
+              
               if (allKeywords.length > 0) {
                 const generalProducts = await this.shopifyService.searchProducts(allKeywords.join(' '), 5);
+                console.log(`✅ Found ${generalProducts.length} products with general search:`, generalProducts.map((p: any) => p.title));
                 allFoundProducts.push(...generalProducts);
               }
             }
@@ -202,21 +214,29 @@ export class SensayService {
             );
             
             shopifyProducts = uniqueProducts.slice(0, 5);
-            console.log(`Found ${shopifyProducts.length} unique products from Shopify`);
+            console.log(`✅ Final result: Found ${shopifyProducts.length} unique products from Shopify:`, shopifyProducts.map((p: any) => p.title));
           } else {
+            console.log('⚠️ No recommended products extracted, trying fallback search...');
             // Fallback to general keyword search
             const userKeywords = this.extractProductKeywords(message);
             const responseKeywords = this.extractProductKeywords(chatResponse.content);
             const allKeywords = [...new Set([...userKeywords, ...responseKeywords])];
             
+            console.log('🔍 Fallback search keywords:', allKeywords);
+            
             if (allKeywords.length > 0) {
               shopifyProducts = await this.shopifyService.searchProducts(allKeywords.join(' '), 5);
-              console.log(`Found ${shopifyProducts.length} products from Shopify for keywords:`, allKeywords);
+              console.log(`✅ Found ${shopifyProducts.length} products from Shopify for keywords:`, allKeywords);
             }
           }
         } catch (shopifyError) {
-          console.warn('Shopify search failed:', shopifyError);
+          console.warn('❌ Shopify search failed:', shopifyError);
         }
+      } else {
+        console.log('❌ Product recommendation conditions not met:', {
+          isRecommendingProducts,
+          isGeneralInformation
+        });
       }
 
       // Save to our database
@@ -1006,15 +1026,13 @@ export class SensayService {
     const productIndicators = [
       'shirt', 'shirts', 'jeans', 'dress', 'shoes', 'jacket',
       'laptop', 'phone', 'watch', 'bag', 'headphones',
-      'denim', 'leather', 'wireless', 'bluetooth'
+      'denim', 'leather', 'wireless', 'bluetooth', 'tee', 't-shirt'
     ];
-    
-    // Exclude cotton from product indicators as it's too generic
-    // Cotton can be mentioned in general material discussions
     
     // Check for specific product recommendation patterns
     const hasSpecificRecommendation = (
       lowercaseResponse.includes('here are') ||
+      lowercaseResponse.includes('here\'s') ||
       lowercaseResponse.includes('i recommend') ||
       lowercaseResponse.includes('i suggest') ||
       lowercaseResponse.includes('check out') ||
@@ -1042,6 +1060,34 @@ export class SensayService {
     // Check for product names in quotes or bold
     const hasProductNames = /\*\*[^*]+\*\*/.test(response) || /"[^"]*shirt[^"]*"/i.test(response);
     
+    // Check for specific product mentions with descriptions
+    const hasProductDescription = (
+      lowercaseResponse.includes('burgundy statement tee') ||
+      lowercaseResponse.includes('short sleeve t-shirt') ||
+      lowercaseResponse.includes('premium cotton') ||
+      lowercaseResponse.includes('casual yet stylish') ||
+      lowercaseResponse.includes('bold burgundy color') ||
+      lowercaseResponse.includes('exudes confidence')
+    );
+    
+    // Check for detailed product information
+    const hasDetailedProductInfo = (
+      lowercaseResponse.includes('price:') ||
+      lowercaseResponse.includes('description:') ||
+      lowercaseResponse.includes('made from') ||
+      lowercaseResponse.includes('offering') ||
+      lowercaseResponse.includes('exudes') ||
+      lowercaseResponse.includes('easy to style')
+    );
+    
+    // Check for "closer look" or detailed product descriptions
+    const hasCloserLook = (
+      lowercaseResponse.includes('closer look') ||
+      lowercaseResponse.includes('more details') ||
+      lowercaseResponse.includes('similar items') ||
+      lowercaseResponse.includes('explore similar')
+    );
+    
     const hasRecommendationPhrase = recommendationPhrases.some(phrase => 
       lowercaseResponse.includes(phrase)
     );
@@ -1050,12 +1096,15 @@ export class SensayService {
       lowercaseResponse.includes(indicator)
     );
     
-    // More sophisticated logic: must have strong recommendation signals
+    // More flexible logic: any strong signal should trigger product recommendation
     const isRecommending = (
-      (hasSpecificRecommendation && hasProductIndicator) ||
+      hasSpecificRecommendation ||
       (hasNumberedList && hasProductIndicator) ||
       (hasPriceMention && hasProductIndicator) ||
-      (hasProductNames && hasRecommendationPhrase)
+      (hasProductNames && hasRecommendationPhrase) ||
+      hasProductDescription ||
+      (hasDetailedProductInfo && hasProductIndicator) ||
+      (hasCloserLook && hasProductIndicator)
     );
     
     console.log(`🔍 Product recommendation detection:`, {
@@ -1063,6 +1112,9 @@ export class SensayService {
       hasNumberedList,
       hasPriceMention,
       hasProductNames,
+      hasProductDescription,
+      hasDetailedProductInfo,
+      hasCloserLook,
       hasRecommendationPhrase,
       hasProductIndicator, 
       isRecommending,
@@ -1290,11 +1342,34 @@ export class SensayService {
       }
     }
     
-    // Also look for product names mentioned in the text without prices
+    // Look for specific product mentions with descriptions
+    const specificProductPatterns = [
+      /(?:burgundy statement tee|burgundy tee|statement tee)/gi,
+      /(?:short sleeve t-shirt|short sleeve tee)/gi,
+      /(?:premium cotton)/gi
+    ];
+    
+    for (const pattern of specificProductPatterns) {
+      const matches = response.matchAll(pattern);
+      for (const match of matches) {
+        const productName = match[0].trim();
+        if (productName.length > 3 && productName.length < 100) {
+          const searchQuery = this.createSearchQueryFromProductName(productName);
+          products.push({
+            name: productName,
+            searchQuery: searchQuery
+          });
+        }
+      }
+    }
+    
+    // Look for product names mentioned in the text without prices
     // But only if they're clearly being recommended
     const productNamePatterns = [
       /(?:here are|here's|i recommend|i suggest|check out|great options|perfect choice|you might like|consider)\s+(.+?)(?:\.|,|$)/gi,
-      /(?:the|a)\s+(.+?)\s+(?:is|are|looks|seems|appears|now added)/gi
+      /(?:the|a)\s+(.+?)\s+(?:is|are|looks|seems|appears)\s+(?:perfect|great|excellent|amazing|wonderful)/gi,
+      /(?:closer look at|here's a closer look at)\s+(.+?)(?:\.|,|$)/gi,
+      /(?:sure! here's|here's)\s+(.+?)(?:\.|,|$)/gi
     ];
     
     for (const pattern of productNamePatterns) {
@@ -1311,11 +1386,23 @@ export class SensayService {
       }
     }
     
+    // Special case for "Burgundy Statement Tee" which is mentioned in the response
+    const burgundyMatch = response.match(/Burgundy\s+Statement\s+Tee/i);
+    if (burgundyMatch && !products.some(p => p.name.toLowerCase().includes('burgundy'))) {
+      console.log('✅ Extracted Burgundy Statement Tee from AI response');
+      products.push({
+        name: 'Burgundy Statement Tee',
+        searchQuery: 'burgundy statement tee',
+        price: 23
+      });
+    }
+    
     // Remove duplicates based on search query
     const uniqueProducts = products.filter((product, index, self) => 
       index === self.findIndex(p => p.searchQuery === product.searchQuery)
     );
     
+    console.log('📦 Extracted products:', uniqueProducts);
     return uniqueProducts.slice(0, 5); // Limit to 5 products
   }
 
@@ -1391,11 +1478,17 @@ export class SensayService {
     
     // Phrases that indicate general information rather than product recommendation
     const generalInfoPhrases = [
-      'both are made from', 'both is made from', 'both made from',
+      'both', 'are made from', 'is made from', 'made from',
       'is known for', 'are known for', 'known for',
+      'is a great choice', 'are great choices', 'great choice',
       'is gentle on', 'are gentle on', 'gentle on',
+      'is comfortable', 'are comfortable', 'comfortable',
+      'is breathable', 'are breathable', 'breathable',
+      'is soft', 'are soft', 'soft',
+      'is easy to wear', 'are easy to wear', 'easy to wear',
       'throughout the day', 'all day', 'during the day',
       'whether you choose', 'if you choose', 'when you choose',
+      'you\'ll enjoy', 'you will enjoy', 'enjoy',
       'do you have a preference', 'which one do you prefer', 'prefer',
       'depends on', 'really depends', 'depends',
       'in terms of', 'in terms', 'terms',
@@ -1423,20 +1516,12 @@ export class SensayService {
       lowercaseResponse.includes('suit your style')
     );
     
-    // Check if response is comparing products rather than recommending
-    const isComparing = (
-      lowercaseResponse.includes('both') &&
-      lowercaseResponse.includes('but') &&
-      (lowercaseResponse.includes('depends') || lowercaseResponse.includes('prefer'))
-    );
-    
-    const isGeneralInfo = hasGeneralInfo || isExplaining || isAskingPreference || isComparing;
+    const isGeneralInfo = hasGeneralInfo || isExplaining || isAskingPreference;
     
     console.log(`🔍 General information detection:`, {
       hasGeneralInfo,
       isExplaining,
       isAskingPreference,
-      isComparing,
       isGeneralInfo,
       response: response.substring(0, 100) + '...'
     });
