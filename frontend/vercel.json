@@ -11,8 +11,48 @@
   ],
   "routes": [
     {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/ShoppyS logo .png",
+      "dest": "/ShoppyS logo .png"
+    },
+    {
+      "src": "/ShoppyS logo bag.png",
+      "dest": "/ShoppyS logo bag.png"
+    },
+    {
+      "src": "/ShoppyS logo white .png",
+      "dest": "/ShoppyS logo white .png"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.css)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css"
+        }
+      ]
     }
   ],
   "regions": ["sin1"],
