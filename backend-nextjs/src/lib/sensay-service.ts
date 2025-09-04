@@ -170,7 +170,42 @@ export class SensayService {
         content: chatResponse.content.substring(0, 200) + '...'
       });
       
-      if (isRecommendingProducts && !isGeneralInformation) {
+      // Always check for product mentions in AI response and search for them
+      console.log('🔍 Checking for product mentions in AI response...');
+      try {
+        // Extract product names from AI response
+        const mentionedProducts = this.extractProductMentionsFromResponse(chatResponse.content);
+        console.log('📦 Extracted product mentions:', mentionedProducts);
+        
+        if (mentionedProducts.length > 0) {
+          // Search for each mentioned product in Shopify
+          const allFoundProducts: any[] = [];
+          
+          for (const productName of mentionedProducts) {
+            try {
+              console.log(`🔍 Searching Shopify for mentioned product: "${productName}"`);
+              const foundProducts = await this.shopifyService.searchProducts(productName, 2);
+              console.log(`✅ Found ${foundProducts.length} products for "${productName}":`, foundProducts.map((p: any) => p.title));
+              allFoundProducts.push(...foundProducts);
+            } catch (error) {
+              console.warn(`❌ Failed to search for mentioned product "${productName}":`, error);
+            }
+          }
+          
+          // Remove duplicates and limit results
+          const uniqueProducts = allFoundProducts.filter((product, index, self) => 
+            index === self.findIndex(p => p.id === product.id)
+          );
+          
+          shopifyProducts = uniqueProducts.slice(0, 5);
+          console.log(`✅ Final result: Found ${shopifyProducts.length} unique products from mentioned products:`, shopifyProducts.map((p: any) => p.title));
+        }
+      } catch (shopifyError) {
+        console.warn('❌ Shopify search for mentioned products failed:', shopifyError);
+      }
+      
+      // Original product recommendation logic (keep as fallback)
+      if (isRecommendingProducts && !isGeneralInformation && shopifyProducts.length === 0) {
         console.log('🛍️ Sensay is recommending products, searching Shopify...');
         try {
           // Extract specific product recommendations from Sensay response
@@ -235,7 +270,8 @@ export class SensayService {
       } else {
         console.log('❌ Product recommendation conditions not met:', {
           isRecommendingProducts,
-          isGeneralInformation
+          isGeneralInformation,
+          shopifyProductsCount: shopifyProducts.length
         });
       }
 
@@ -1527,6 +1563,102 @@ export class SensayService {
     });
     
     return isGeneralInfo;
+  }
+
+  /**
+   * Extract product mentions from AI response.
+   * This method looks for product names in various formats in the AI response.
+   */
+  private extractProductMentionsFromResponse(response: string): string[] {
+    const productMentions: string[] = [];
+    
+    // Look for product names in bold format (e.g., **Product Name**)
+    const boldMatches = response.match(/\*\*([^*]+)\*\*/g);
+    if (boldMatches) {
+      for (const match of boldMatches) {
+        const productName = match.replace(/\*\*/g, '').trim();
+        if (productName.length > 3 && productName.length < 100) {
+          productMentions.push(productName);
+        }
+      }
+    }
+
+    // Look for product names in quotes (e.g., "Product Name")
+    const quotedMatches = response.match(/"([^"]+)"/g);
+    if (quotedMatches) {
+      for (const match of quotedMatches) {
+        const productName = match.replace(/"/g, '').trim();
+        if (productName.length > 3 && productName.length < 100) {
+          productMentions.push(productName);
+        }
+      }
+    }
+    
+    // Look for product mentions with prices (e.g., "Burgundy Statement Tee - $23")
+    const productPricePattern = /([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))\s*-\s*\$(\d+(?:\.\d{2})?)/gi;
+    const priceMatches = response.matchAll(productPricePattern);
+    
+    for (const match of priceMatches) {
+      const productName = match[1].trim();
+      if (productName.length > 3 && productName.length < 100) {
+        productMentions.push(productName);
+      }
+    }
+    
+    // Look for numbered product mentions (e.g., "1. Burgundy Statement Tee")
+    const numberedProductPattern = /^\d+\.\s+([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gim;
+    const numberedMatches = response.matchAll(numberedProductPattern);
+    
+    for (const match of numberedMatches) {
+      const productName = match[1].trim();
+      if (productName.length > 3 && productName.length < 100) {
+        productMentions.push(productName);
+      }
+    }
+    
+    // Look for specific product mentions without prices (e.g., "the Burgundy Statement Tee")
+    const specificProductPattern = /(?:the|a|an)\s+([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gi;
+    const specificMatches = response.matchAll(specificProductPattern);
+    
+    for (const match of specificMatches) {
+      const productName = match[1].trim();
+      if (productName.length > 3 && productName.length < 100) {
+        productMentions.push(productName);
+      }
+    }
+    
+    // Look for product names mentioned in cart-related context
+    const cartProductPattern = /(?:added|adding|add)\s+(?:the|a|an)?\s*([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gi;
+    const cartMatches = response.matchAll(cartProductPattern);
+    
+    for (const match of cartMatches) {
+      const productName = match[1].trim();
+      if (productName.length > 3 && productName.length < 100) {
+        productMentions.push(productName);
+      }
+    }
+    
+    // Look for product names in recommendation context
+    const recommendationPattern = /(?:here are|here's|i recommend|i suggest|check out|great options|perfect choice|you might like|consider)\s+(?:the|a|an)?\s*([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gi;
+    const recommendationMatches = response.matchAll(recommendationPattern);
+    
+    for (const match of recommendationMatches) {
+      const productName = match[1].trim();
+      if (productName.length > 3 && productName.length < 100) {
+        productMentions.push(productName);
+      }
+    }
+
+    // Remove duplicates and filter out common words
+    const uniqueMentions = [...new Set(productMentions)].filter(name => {
+      const lowercaseName = name.toLowerCase();
+      // Filter out common words that aren't product names
+      const commonWords = ['the', 'and', 'for', 'with', 'like', 'want', 'need', 'looking', 'show', 'find', 'could', 'would', 'something', 'budget', 'range', 'prefer', 'comfortable', 'options', 'choices', 'recommendations'];
+      return !commonWords.some(word => lowercaseName.includes(word));
+    });
+    
+    console.log('📦 Extracted product mentions from AI response:', uniqueMentions);
+    return uniqueMentions;
   }
 }
 

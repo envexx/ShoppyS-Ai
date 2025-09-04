@@ -20,6 +20,7 @@ interface ChatResponse {
     role: 'assistant' | 'user';
     timestamp: string;
     sessionId: string;
+    isNewSession?: boolean;
     shopifyProducts?: any[];
     cartAction?: {
       success: boolean;

@@ -227,9 +227,6 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
     setLoading(true);
     setError('');
 
-    // If this is a new chat and it's the first message, this will automatically create a new session
-    // The backend will handle session creation in the sendChat endpoint
-
     try {
       // Determine if this is a new chat or continuing existing session
       const isNewChatMode = isNewChat || selectedChat === 'new-chat';
@@ -253,7 +250,8 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         cartAction: response.data?.cartAction,
         content: response.data?.content?.substring(0, 100) + '...',
         isNewChatMode,
-        sessionId: sessionIdToSend
+        sessionId: sessionIdToSend,
+        isNewSession: response.data?.isNewSession
       });
       if (response.success && response.data) {
         const aiContent = response.data.content || 'No response content';
@@ -274,8 +272,8 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
           setCurrentSessionId(response.data.sessionId);
           
           // If this was a new session or session ID changed, notify parent to switch to it
-          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== response.data.sessionId) && onSessionCreated) {
-            console.log('Session ID changed from', sessionIdToSend, 'to', response.data.sessionId);
+          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== response.data.sessionId || response.data.isNewSession) && onSessionCreated) {
+            console.log('Session ID changed from', sessionIdToSend, 'to', response.data.sessionId, 'isNewSession:', response.data.isNewSession);
             onSessionCreated(response.data.sessionId);
           }
         }

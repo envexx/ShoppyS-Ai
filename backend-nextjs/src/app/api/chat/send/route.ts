@@ -17,18 +17,34 @@ async function handler(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { message, sessionId } = body;
+    const { message, sessionId, isNewChat } = body;
 
     if (!message || message.trim().length === 0) {
       return errorResponse('Message is required', 400);
     }
 
-    console.log(`Chat request from user ${user.id}: "${message}"`);
+    console.log(`Chat request from user ${user.id}: "${message}"`, { sessionId, isNewChat });
 
-    // Get or create session if not provided
+    // Determine if this should be a new session
     let chatSessionId = sessionId;
-    if (!chatSessionId) {
+    let isNewSession = false;
+    
+    // Create new session if:
+    // 1. No sessionId provided
+    // 2. isNewChat is explicitly true
+    // 3. sessionId is 'new-chat' or similar
+    if (!chatSessionId || isNewChat || chatSessionId === 'new-chat') {
       chatSessionId = await sensayService.getOrCreateChatSession(user.id);
+      isNewSession = true;
+      console.log(`✅ Created new chat session ${chatSessionId} for user ${user.id}`);
+    } else {
+      // Validate existing session ownership
+      const isValidSession = await sensayService.validateSessionOwnership(chatSessionId, user.id);
+      if (!isValidSession) {
+        console.error(`❌ Session ${chatSessionId} does not belong to user ${user.id}`);
+        return errorResponse('Invalid session access', 403);
+      }
+      console.log(`✅ Using existing chat session ${chatSessionId} for user ${user.id}`);
     }
 
     // Send message to Sensay
@@ -36,7 +52,8 @@ async function handler(request: NextRequest) {
 
     return successResponse({
       ...response,
-      sessionId: chatSessionId
+      sessionId: chatSessionId,
+      isNewSession: isNewSession
     });
   } catch (error: any) {
     console.error('Chat send error:', error);
