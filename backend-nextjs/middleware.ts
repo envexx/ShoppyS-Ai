@@ -12,7 +12,8 @@ export function middleware(request: NextRequest) {
       'http://localhost:5173',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
-      'http://127.0.0.1:5173'
+      'http://127.0.0.1:5173',
+      'https://shoppy-s-ai-apc2.vercel.app'
     ];
 
     // Handle preflight OPTIONS request
@@ -22,7 +23,7 @@ export function middleware(request: NextRequest) {
       if (origin && allowedOrigins.includes(origin)) {
         response.headers.set('Access-Control-Allow-Origin', origin);
       } else {
-        response.headers.set('Access-Control-Allow-Origin', 'http://localhost:5173');
+        response.headers.set('Access-Control-Allow-Origin', 'https://shoppy-s-ai-apc2.vercel.app');
       }
       
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -39,7 +40,7 @@ export function middleware(request: NextRequest) {
     if (origin && allowedOrigins.includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin);
     } else {
-      response.headers.set('Access-Control-Allow-Origin', 'http://localhost:5173');
+      response.headers.set('Access-Control-Allow-Origin', 'https://shoppy-s-ai-apc2.vercel.app');
     }
     
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
