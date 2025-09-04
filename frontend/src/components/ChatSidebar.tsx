@@ -108,8 +108,10 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
           
           if (response.ok) {
             const data = await response.json();
-            if (data.success) {
-              const serverSessions = data.sessions.map((session: any) => ({
+            console.log('Server sessions response:', data);
+            
+            if (data.success && data.data && data.data.sessions && Array.isArray(data.data.sessions)) {
+              const serverSessions = data.data.sessions.map((session: any) => ({
                 id: session.id,
                 title: session.title || 'New Chat',
                 lastMessage: '', // Server doesn't provide lastMessage
@@ -124,10 +126,18 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
               );
               
               setChatSessions(uniqueSessions.sort((a, b) => b.timestamp - a.timestamp));
+            } else {
+              console.log('No sessions data in response or invalid format:', data);
             }
+          } else {
+            console.log('Failed to load sessions from server. Status:', response.status);
           }
         } catch (error) {
           console.error('Error syncing with server:', error);
+          console.error('Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : 'No stack trace'
+          });
           // Tetap gunakan data lokal jika server error
         }
       }

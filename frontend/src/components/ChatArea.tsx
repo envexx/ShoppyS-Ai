@@ -291,7 +291,7 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
           const data = await response.json();
           console.log('Chat history response for session:', sessionId, data);
           
-          if (data.success && data.messages && data.messages.length > 0) {
+          if (data.success && data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
             const serverMessages = data.messages.map((msg: any) => ({
               id: msg.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
               content: msg.content,
@@ -305,25 +305,25 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
               console.log(`🔄 Server has more messages (${serverMessages.length} vs ${finalMessages.length}), using server data`);
               finalMessages = serverMessages;
               
-                           // Update localStorage dengan data server yang lebih lengkap
-             serverMessages.forEach((msg: any) => {
-               chatStorage.saveMessage(sessionId, {
-                 id: msg.id,
-                 role: msg.role,
-                 content: msg.content,
-                 timestamp: new Date(msg.timestamp).getTime(),
-                 products: msg.products
-               });
-             });
+              // Update localStorage dengan data server yang lebih lengkap
+              serverMessages.forEach((msg: any) => {
+                chatStorage.saveMessage(sessionId, {
+                  id: msg.id,
+                  role: msg.role,
+                  content: msg.content,
+                  timestamp: new Date(msg.timestamp).getTime(),
+                  products: msg.products
+                });
+              });
             } else {
               console.log(`📱 Local storage has same or more messages (${finalMessages.length} vs ${serverMessages.length}), keeping local data`);
             }
           } else {
-            console.log('No messages found on server for session:', sessionId);
+            console.log('No messages found on server for session:', sessionId, 'Response data:', data);
             // Tetap gunakan data lokal jika ada
           }
         } else {
-          console.log('Failed to load chat history from server for session:', sessionId);
+          console.log('Failed to load chat history from server for session:', sessionId, 'Status:', response.status);
           // Tetap gunakan data lokal jika server error
         }
       } catch (error) {
