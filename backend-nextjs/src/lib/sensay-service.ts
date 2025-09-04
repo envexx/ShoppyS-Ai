@@ -1294,7 +1294,7 @@ export class SensayService {
     // But only if they're clearly being recommended
     const productNamePatterns = [
       /(?:here are|here's|i recommend|i suggest|check out|great options|perfect choice|you might like|consider)\s+(.+?)(?:\.|,|$)/gi,
-      /(?:the|a)\s+(.+?)\s+(?:is|are|looks|seems|appears)\s+(?:perfect|great|excellent|amazing|wonderful)/gi
+      /(?:the|a)\s+(.+?)\s+(?:is|are|looks|seems|appears|now added)/gi
     ];
     
     for (const pattern of productNamePatterns) {
@@ -1391,17 +1391,11 @@ export class SensayService {
     
     // Phrases that indicate general information rather than product recommendation
     const generalInfoPhrases = [
-      'both', 'are made from', 'is made from', 'made from',
+      'both are made from', 'both is made from', 'both made from',
       'is known for', 'are known for', 'known for',
-      'is a great choice', 'are great choices', 'great choice',
       'is gentle on', 'are gentle on', 'gentle on',
-      'is comfortable', 'are comfortable', 'comfortable',
-      'is breathable', 'are breathable', 'breathable',
-      'is soft', 'are soft', 'soft',
-      'is easy to wear', 'are easy to wear', 'easy to wear',
       'throughout the day', 'all day', 'during the day',
       'whether you choose', 'if you choose', 'when you choose',
-      'you\'ll enjoy', 'you will enjoy', 'enjoy',
       'do you have a preference', 'which one do you prefer', 'prefer',
       'depends on', 'really depends', 'depends',
       'in terms of', 'in terms', 'terms',
@@ -1429,12 +1423,20 @@ export class SensayService {
       lowercaseResponse.includes('suit your style')
     );
     
-    const isGeneralInfo = hasGeneralInfo || isExplaining || isAskingPreference;
+    // Check if response is comparing products rather than recommending
+    const isComparing = (
+      lowercaseResponse.includes('both') &&
+      lowercaseResponse.includes('but') &&
+      (lowercaseResponse.includes('depends') || lowercaseResponse.includes('prefer'))
+    );
+    
+    const isGeneralInfo = hasGeneralInfo || isExplaining || isAskingPreference || isComparing;
     
     console.log(`🔍 General information detection:`, {
       hasGeneralInfo,
       isExplaining,
       isAskingPreference,
+      isComparing,
       isGeneralInfo,
       response: response.substring(0, 100) + '...'
     });
