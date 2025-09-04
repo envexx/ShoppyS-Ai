@@ -375,30 +375,29 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         currentSessionId
       });
       
-      // Use new session management API
-      const endpoint = currentSessionId 
-        ? createApiUrl(`/chat/${currentSessionId}`)
-        : createApiUrl('/chat/new');
+      // Use the correct API endpoint for both new and existing chats
+      const endpoint = createApiUrl('/chat/send');
 
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
           message: userMessage.content,
-          sessionId: currentSessionId
+          sessionId: currentSessionId,
+          isNewChat: isNewChatMode
         })
       });
 
       const data = await response.json();
       console.log('📨 Chat response received:', {
         success: data.success,
-        sessionId: data.sessionId,
-        title: data.title,
-        response: data.response?.substring(0, 100) + '...'
+        sessionId: data.data?.sessionId,
+        isNewSession: data.data?.isNewSession,
+        response: data.data?.content?.substring(0, 100) + '...'
       });
 
       if (data.success) {
-        const aiContent = data.response || 'No response content';
+        const aiContent = data.data.content || 'No response content';
         
         // Log the original AI response from Sensay
         console.log('🤖 Original Sensay Response:', aiContent);
@@ -434,45 +433,69 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         setMessages(prev => [...prev, aiMessage]);
         
         // Save messages to localStorage
-        if (currentSessionId || data.sessionId) {
-          const sessionId = data.sessionId || currentSessionId;
+        const sessionId = data.data.sessionId || currentSessionId;
+        
+        if (sessionId) {
+          // Save user message
+          chatStorage.saveMessage(sessionId, {
+            id: userMessage.id,
+            role: 'user',
+            content: userMessage.content,
+            timestamp: new Date(userMessage.timestamp).getTime(),
+            products: userMessage.products
+          });
           
-          if (sessionId) {
-            // Save user message
-            chatStorage.saveMessage(sessionId, {
-              id: userMessage.id,
-              role: 'user',
-              content: userMessage.content,
-              timestamp: new Date(userMessage.timestamp).getTime(),
-              products: userMessage.products
-            });
-            
-            // Save AI message
-            chatStorage.saveMessage(sessionId, {
-              id: aiMessage.id,
-              role: 'assistant',
-              content: aiMessage.content,
-              timestamp: new Date(aiMessage.timestamp).getTime(),
-              products: aiMessage.products
-            });
-            
-            console.log(`💾 Saved messages to localStorage for session ${sessionId}`);
-          }
+          // Save AI message
+          chatStorage.saveMessage(sessionId, {
+            id: aiMessage.id,
+            role: 'assistant',
+            content: aiMessage.content,
+            timestamp: new Date(aiMessage.timestamp).getTime(),
+            products: aiMessage.products
+          });
+          
+          console.log(`💾 Saved messages to localStorage for session ${sessionId}`);
         }
         
         // Update currentSessionId with the session ID from response
-        if (data.sessionId) {
-          setCurrentSessionId(data.sessionId);
+        if (data.data.sessionId) {
+          setCurrentSessionId(data.data.sessionId);
           
           // If this was a new session or session ID changed, notify parent to switch to it
-          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== data.sessionId) && onSessionCreated) {
-            console.log('Session ID changed from', sessionIdToSend, 'to', data.sessionId);
-            onSessionCreated(data.sessionId);
+          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== data.data.sessionId) && onSessionCreated) {
+            console.log('Session ID changed from', sessionIdToSend, 'to', data.data.sessionId);
+            onSessionCreated(data.data.sessionId);
+          }
+        }
+        
+                  // Update chat sessions in localStorage
+          chatStorage.saveSession({
+            id: sessionId,
+            title: userMessage.content.substring(0, 30) + (userMessage.content.length > 30 ? '...' : ''),
+            lastMessage: aiMessage.content.substring(0, 50) + (aiMessage.content.length > 50 ? '...' : ''),
+            timestamp: new Date().getTime(),
+            messageCount: 2, // User message + AI response
+            createdAt: new Date().getTime(),
+            updatedAt: new Date().getTime()
+          });
+          
+          // Handle cart actions if any
+        if (data.data.cartAction) {
+          console.log('🛒 Cart action detected:', data.data.cartAction);
+          
+          if (data.data.cartAction.success) {
+            // Update cart count
+            refreshCartCount();
+            
+            // Show success message
+            console.log('✅ Cart action successful:', data.data.cartAction.message);
+          } else {
+            console.warn('❌ Cart action failed:', data.data.cartAction.error);
           }
         }
         
         // Check if response indicates cart action and refresh cart count (fallback)
-        const responseText = (data.response || '').toLowerCase();
+        const responseText = (data.data.content || '').toLowerCase();
         if (responseText.includes('added to cart') || 
             responseText.includes('🛒') || 
             responseText.includes('cart') ||

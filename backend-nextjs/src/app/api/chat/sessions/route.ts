@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      sessions: sessions
+      data: {
+        sessions: sessions
+      }
     });
 
   } catch (error) {
