@@ -44,16 +44,16 @@ export function rateLimit(windowMs: number = 15 * 60 * 1000, max: number = 100) 
  * CORS handler for API routes
  */
 export function corsHeaders(origin?: string | null): Record<string, string> {
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001', 
-    'http://localhost:5173',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
-    'http://127.0.0.1:5173',
-    'https://shoppy-s-ai-apc2.vercel.app',
-    'https://shoppy-s-ai-backend.vercel.app'
-  ];
+     const allowedOrigins = [
+     'http://localhost:3000',
+     'http://localhost:3001', 
+     'http://localhost:5173',
+     'http://127.0.0.1:3000',
+     'http://127.0.0.1:3001',
+     'http://127.0.0.1:5173',
+     'https://shoppy-s-ai-apc2.vercel.app', // Frontend URL
+     'https://shoppy-s-ai-backend.vercel.app' // Backend URL (for admin access)
+   ];
 
   // Check if the origin is allowed
   const isAllowedOrigin = origin && allowedOrigins.includes(origin);
@@ -62,7 +62,7 @@ export function corsHeaders(origin?: string | null): Record<string, string> {
   const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
   
   // Determine the Access-Control-Allow-Origin value
-  let allowOrigin = 'https://shoppy-s-ai-apc2.vercel.app'; // Default
+      let allowOrigin = 'https://shoppy-s-ai-backend.vercel.app'; // Default
   if (isLocalhost || isAllowedOrigin) {
     allowOrigin = origin;
   }

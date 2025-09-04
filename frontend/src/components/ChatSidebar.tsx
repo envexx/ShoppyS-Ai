@@ -98,7 +98,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
         try {
           const API_BASE_URL = import.meta.env.DEV 
             ? 'http://localhost:3000/api' 
-            : 'https://shoppy-s-ai-apc2.vercel.app/api';
+            : 'https://shoppy-s-ai-backend.vercel.app/api'; // Backend URL untuk API calls
             
           const response = await fetch(`${API_BASE_URL}/chat/sessions`, {
             headers: {
@@ -191,7 +191,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
           if (token) {
             const API_BASE_URL = import.meta.env.DEV 
               ? 'http://localhost:3000/api' 
-              : 'https://shoppy-s-ai-apc2.vercel.app/api';
+              : 'https://shoppy-s-ai-backend.vercel.app/api'; // Backend URL untuk API calls
               
             const response = await fetch(`${API_BASE_URL}/chat/${sessionId}`, {
               method: 'DELETE',

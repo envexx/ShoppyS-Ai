@@ -5,17 +5,17 @@ export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const origin = request.headers.get('origin');
     
-    // List of allowed origins
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001', 
-      'http://localhost:5173',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      'http://127.0.0.1:5173',
-      'https://shoppy-s-ai-apc2.vercel.app',
-      'https://shoppy-s-ai-backend.vercel.app'
-    ];
+         // List of allowed origins
+     const allowedOrigins = [
+       'http://localhost:3000',
+       'http://localhost:3001', 
+       'http://localhost:5173',
+       'http://127.0.0.1:3000',
+       'http://127.0.0.1:3001',
+       'http://127.0.0.1:5173',
+       'https://shoppy-s-ai-apc2.vercel.app', // Frontend URL
+       'https://shoppy-s-ai-backend.vercel.app' // Backend URL (for admin access)
+     ];
 
     // Check if origin is allowed or is localhost
     const isAllowedOrigin = origin && allowedOrigins.includes(origin);
