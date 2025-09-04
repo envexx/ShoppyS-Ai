@@ -50,13 +50,14 @@ export function corsHeaders(origin?: string | null): Record<string, string> {
     'http://localhost:5173',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
-    'http://127.0.0.1:5173'
+    'http://127.0.0.1:5173',
+    'https://shoppy-s-ai-apc2.vercel.app'
   ];
 
   const isAllowedOrigin = origin && allowedOrigins.includes(origin);
 
   return {
-    'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Origin': isAllowedOrigin ? origin : 'https://shoppy-s-ai-apc2.vercel.app',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Allow-Credentials': 'true',
