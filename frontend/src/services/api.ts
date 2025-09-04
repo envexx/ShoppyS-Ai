@@ -139,7 +139,18 @@ export async function sendChat(message: string, isNewChat?: boolean, sessionId?:
 
 export async function getChatHistory(sessionId?: string): Promise<ChatHistoryResponse> {
   const url = sessionId ? `/chat/history?sessionId=${sessionId}` : '/chat/history';
-  return request(url);
+  const response = await request(url);
+  
+  // Handle new response format
+  if (response.success && response.data && response.data.history) {
+    return {
+      success: true,
+      data: response.data.history
+    };
+  }
+  
+  // Fallback to old format
+  return response;
 }
 
 export async function getSensayChatHistory(): Promise<SensayChatHistoryResponse> {
@@ -147,7 +158,24 @@ export async function getSensayChatHistory(): Promise<SensayChatHistoryResponse>
 }
 
 export async function getChatSessions(): Promise<{ success: boolean; data: ChatSession[] }> {
-  return request('/chat/sessions');
+  const response = await request('/chat/sessions');
+  
+  // Handle new response format
+  if (response.success && response.data && response.data.sessions) {
+    return {
+      success: true,
+      data: response.data.sessions.map((session: any) => ({
+        id: session.id,
+        title: session.title || 'New Chat',
+        lastMessage: '',
+        timestamp: new Date(session.updatedAt).getTime(),
+        messageCount: session.messageCount || 0
+      }))
+    };
+  }
+  
+  // Fallback to old format
+  return response;
 }
 
 // Shopify API interfaces

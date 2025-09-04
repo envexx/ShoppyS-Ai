@@ -343,9 +343,19 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || loading || !user) return;
+    if (!message.trim() || loading || !user) {
+      console.log('❌ Cannot send message:', { 
+        hasMessage: !!message.trim(), 
+        loading, 
+        hasUser: !!user,
+        userId: user?.id 
+      });
+      return;
+    }
 
     const messageContent = message.trim();
+    
+    console.log('📤 Sending message for user:', user.id, user.username, 'Content:', messageContent.substring(0, 50) + '...');
     
     const userMessage: Message = {
       id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}_${performance.now()}`,
@@ -365,40 +375,33 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
       // Use the tracked currentSessionId or fall back to selectedChat logic
       const sessionIdToSend = currentSessionId || (selectedChat !== 'new-chat' && !isNewChatMode ? selectedChat : undefined);
       
-      console.log('Sending message with params:', { 
+      console.log('📨 Sending message with params:', { 
         message: userMessage.content, 
         isNewChatMode: isNewChatMode, 
         sessionId: sessionIdToSend,
         selectedChat,
         isNewChat,
         messagesCount: messages.length,
-        currentSessionId
+        currentSessionId,
+        userId: user.id
       });
       
-      // Use new session management API
-      const endpoint = currentSessionId 
-        ? createApiUrl(`/chat/${currentSessionId}`)
-        : createApiUrl('/chat/new');
+      // Use the improved API service
+      const response = await api.sendChat(
+        userMessage.content, 
+        isNewChatMode, 
+        sessionIdToSend
+      );
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          message: userMessage.content,
-          sessionId: currentSessionId
-        })
-      });
-
-      const data = await response.json();
       console.log('📨 Chat response received:', {
-        success: data.success,
-        sessionId: data.sessionId,
-        title: data.title,
-        response: data.response?.substring(0, 100) + '...'
+        success: response.success,
+        sessionId: response.data.sessionId,
+        isNewSession: response.data.isNewSession,
+        response: response.data.content?.substring(0, 100) + '...'
       });
 
-      if (data.success) {
-        const aiContent = data.response || 'No response content';
+      if (response.success) {
+        const aiContent = response.data.content || 'No response content';
         
         // Log the original AI response from Sensay
         console.log('🤖 Original Sensay Response:', aiContent);
@@ -441,7 +444,7 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         setMessages(prev => [...prev, aiMessage]);
         
         // Save messages to localStorage
-        const sessionId = data.sessionId || currentSessionId;
+        const sessionId = response.data.sessionId || currentSessionId;
         
         if (sessionId) {
           // Save user message
@@ -466,13 +469,13 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         }
         
         // Update currentSessionId with the session ID from response
-        if (data.sessionId) {
-          setCurrentSessionId(data.sessionId);
+        if (response.data.sessionId) {
+          setCurrentSessionId(response.data.sessionId);
           
           // If this was a new session or session ID changed, notify parent to switch to it
-          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== data.sessionId) && onSessionCreated) {
-            console.log('Session ID changed from', sessionIdToSend, 'to', data.sessionId);
-            onSessionCreated(data.sessionId);
+          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== response.data.sessionId) && onSessionCreated) {
+            console.log('Session ID changed from', sessionIdToSend, 'to', response.data.sessionId);
+            onSessionCreated(response.data.sessionId);
           }
         }
         
@@ -487,8 +490,8 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
           updatedAt: new Date().getTime()
         });
         
-        // Check if response indicates cart action and refresh cart count (fallback)
-        const responseText = (data.response || '').toLowerCase();
+        // Check if response indicates cart action and refresh cart count
+        const responseText = (aiContent || '').toLowerCase();
         if (responseText.includes('added to cart') || 
             responseText.includes('🛒') || 
             responseText.includes('cart') ||
@@ -504,7 +507,7 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         
         // Product detection is now handled inline with ProductCard
       } else {
-        console.error('Invalid response structure:', data);
+        console.error('Invalid response structure:', response);
         setError('Received invalid response from server');
       }
     } catch (error) {

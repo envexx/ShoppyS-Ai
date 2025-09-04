@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { User, LogOut, MessageCircle, Clock, MoreVertical, RefreshCw, Plus, Moon, Sun } from 'lucide-react';
 import * as api from '../services/api';
 import { URL_MANAGER } from '../utils/urlManager';
-import { chatStorage, ChatSession } from '../utils/chatStorage';
 import { createApiUrl, getAuthHeaders } from '../config/api';
 
 interface User {
@@ -11,6 +10,14 @@ interface User {
   email: string;
   username: string;
   sensayUserId?: string;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  lastMessage: string;
+  timestamp: number;
+  messageCount: number;
 }
 
 interface ChatSidebarProps {
@@ -57,6 +64,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
   // Load chat sessions and history when user logs in (only once)
   useEffect(() => {
     if (user && !sessionsLoaded) {
+      console.log('👤 User logged in, loading sessions for:', user.id, user.username);
       // Add a small delay to ensure token is properly set
       const timer = setTimeout(() => {
         loadChatSessions();
@@ -64,6 +72,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
       
       return () => clearTimeout(timer);
     } else if (!user) {
+      console.log('👤 User logged out, clearing sessions');
       // Clear data when user logs out
       setChatSessions([]);
       setSessionsLoaded(false);
@@ -73,7 +82,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
   // Refresh sessions when triggered from parent
   useEffect(() => {
     if (refreshTrigger && user) {
-      console.log('Refreshing sessions due to trigger:', refreshTrigger);
+      console.log('🔄 Refreshing sessions due to trigger:', refreshTrigger, 'for user:', user.id);
       setSessionsLoaded(false); // Reset flag to allow reload
       setTimeout(() => {
         loadChatSessions();
@@ -87,28 +96,34 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
     try {
       setHistoryLoading(true);
       
-      // Load dari localStorage terlebih dahulu untuk performa cepat
-      const localSessions = chatStorage.getChatSessions();
-      const localSessionsArray = Object.values(localSessions).sort((a, b) => b.timestamp - a.timestamp);
-      setChatSessions(localSessionsArray);
+      console.log('🔄 Loading chat sessions for user:', user?.id, user?.username);
       
-      // Kemudian sync dengan server untuk data terbaru
+      // Langsung fetch dari server tanpa local storage
       const token = localStorage.getItem('token');
-      if (token) {
+      if (token && user) {
         try {
           const API_BASE_URL = import.meta.env.DEV 
             ? 'http://localhost:3000/api' 
-            : 'https://shoppy-s-ai-backend.vercel.app/api'; // Backend URL untuk API calls
+            : 'https://shoppy-s-ai-backend.vercel.app/api';
             
+          console.log('🌐 Fetching sessions directly from server...');
+          console.log('🔗 API URL:', `${API_BASE_URL}/chat/sessions`);
+          console.log('🔑 Token exists:', !!token);
+          console.log('👤 User authenticated:', !!user);
+          
           const response = await fetch(`${API_BASE_URL}/chat/sessions`, {
             headers: {
               'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
             },
           });
           
+          console.log('📡 Server response status:', response.status);
+          console.log('📡 Server response headers:', Object.fromEntries(response.headers.entries()));
+          
           if (response.ok) {
             const data = await response.json();
-            console.log('Server sessions response:', data);
+            console.log('✅ Server sessions response:', data);
             
             if (data.success && data.data && data.data.sessions && Array.isArray(data.data.sessions)) {
               const serverSessions = data.data.sessions.map((session: any) => ({
@@ -119,32 +134,61 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
                 messageCount: session.messageCount || 0
               }));
               
-              // Merge dengan data lokal
-              const mergedSessions = [...localSessionsArray, ...serverSessions];
-              const uniqueSessions = mergedSessions.filter((session, index, self) => 
-                index === self.findIndex(s => s.id === session.id)
-              );
+              console.log('📦 Server sessions processed:', serverSessions.length);
+              console.log('📦 Server sessions details:', serverSessions);
               
-              setChatSessions(uniqueSessions.sort((a, b) => b.timestamp - a.timestamp));
+              // Langsung set sessions dari server tanpa merge
+              setChatSessions(serverSessions);
+              
+              console.log('✅ Sessions loaded from server:', serverSessions.length);
+              console.log('✅ User authenticated:', data.data.userAuthenticated);
+              console.log('✅ User ID:', data.data.userId);
+              console.log('✅ Final sessions:', serverSessions);
             } else {
-              console.log('No sessions data in response or invalid format:', data);
+              console.log('⚠️ No sessions data in response or invalid format:', data);
+              console.log('⚠️ Response structure:', {
+                success: data.success,
+                hasData: !!data.data,
+                hasSessions: !!(data.data && data.data.sessions),
+                isArray: Array.isArray(data.data?.sessions)
+              });
+              // Set empty array jika server data invalid
+              setChatSessions([]);
             }
           } else {
-            console.log('Failed to load sessions from server. Status:', response.status);
+            const errorText = await response.text();
+            console.log('❌ Failed to load sessions from server. Status:', response.status, 'Error:', errorText);
+            
+            if (response.status === 401) {
+              console.log('🔐 Authentication failed, user may need to re-login');
+              // Set empty array untuk authentication error
+              setChatSessions([]);
+            } else {
+              // Set empty array untuk server error
+              setChatSessions([]);
+            }
           }
         } catch (error) {
-          console.error('Error syncing with server:', error);
+          console.error('❌ Error fetching from server:', error);
           console.error('Error details:', {
             message: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : 'No stack trace'
           });
-          // Tetap gunakan data lokal jika server error
+          // Set empty array untuk network error
+          setChatSessions([]);
         }
+      } else {
+        console.log('⚠️ No token or user found, cannot fetch sessions');
+        console.log('🔍 Token exists:', !!localStorage.getItem('token'));
+        console.log('🔍 User exists:', !!user);
+        // Set empty array jika tidak ada token atau user
+        setChatSessions([]);
       }
       
       setSessionsLoaded(true);
     } catch (error) {
-      console.error('Error loading chat sessions:', error);
+      console.error('❌ Error loading chat sessions:', error);
+      setChatSessions([]);
     } finally {
       setHistoryLoading(false);
     }
@@ -196,36 +240,48 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
     e.stopPropagation(); // Prevent chat selection
     
     if (confirm('Are you sure you want to delete this chat session?')) {
-              try {
-          const token = localStorage.getItem('token');
-          if (token) {
-            const API_BASE_URL = import.meta.env.DEV 
-              ? 'http://localhost:3000/api' 
-              : 'https://shoppy-s-ai-backend.vercel.app/api'; // Backend URL untuk API calls
-              
-            const response = await fetch(`${API_BASE_URL}/chat/${sessionId}`, {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-              },
-            });
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const API_BASE_URL = import.meta.env.DEV 
+            ? 'http://localhost:3000/api' 
+            : 'https://shoppy-s-ai-backend.vercel.app/api';
+            
+          console.log('🗑️ Deleting session:', sessionId);
           
+          const response = await fetch(`${API_BASE_URL}/chat/${sessionId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        
           if (response.ok) {
+            console.log('✅ Session deleted successfully:', sessionId);
             // Remove from local state
             setChatSessions(prev => prev.filter(session => session.id !== sessionId));
-            // Remove from localStorage
-            chatStorage.deleteSession(sessionId);
             
             // If this was the selected chat, switch to new chat
             if (selectedChat === sessionId) {
               handleNewChat();
             }
+          } else {
+            const errorText = await response.text();
+            console.log('❌ Failed to delete session:', response.status, errorText);
+            // Still remove from local state for better UX
+            setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+            
+            if (selectedChat === sessionId) {
+              handleNewChat();
+            }
           }
+        } else {
+          console.log('❌ No token found for session deletion');
         }
       } catch (error) {
-        console.error('Error deleting session:', error);
-        // Fallback to localStorage only
-        chatStorage.deleteSession(sessionId);
+        console.error('❌ Error deleting session:', error);
+        // Remove from local state for better UX even if server call fails
         setChatSessions(prev => prev.filter(session => session.id !== sessionId));
         
         if (selectedChat === sessionId) {
