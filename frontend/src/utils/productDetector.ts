@@ -619,6 +619,14 @@ export async function detectProductsFromShopify(text: string): Promise<ProductIn
     }
   }
   
+  // If no products found in Shopify, fallback to local detection
+  if (products.length === 0) {
+    console.log('🔄 No products found in Shopify, falling back to local detection...');
+    const localProducts = detectProductsInText(text);
+    products.push(...localProducts);
+    console.log(`📦 Local detection found ${localProducts.length} products`);
+  }
+  
   console.log(`🎯 Shopify search completed: Found ${products.length} products`);
   return products;
 }
@@ -686,8 +694,15 @@ function extractProductNamesFromText(text: string): string[] {
  */
 async function searchProductInShopify(productName: string): Promise<any> {
   try {
+    console.log(`🔍 Searching Shopify for product: "${productName}"`);
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Shopify search timeout')), 5000); // 5 second timeout
+    });
+    
     // Call Shopify search API using correct backend URL
-    const response = await fetch(createApiUrl('/shopify/search'), {
+    const searchPromise = fetch(createApiUrl('/shopify/search'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -697,20 +712,30 @@ async function searchProductInShopify(productName: string): Promise<any> {
       })
     });
     
+    // Race between the search and timeout
+    const response = await Promise.race([searchPromise, timeoutPromise]) as Response;
+    
+    console.log(`📡 Shopify search response status: ${response.status}`);
+    
     if (!response.ok) {
-      throw new Error(`Shopify search failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`❌ Shopify search failed: ${response.status} - ${errorText}`);
+      throw new Error(`Shopify search failed: ${response.status} - ${errorText}`);
     }
     
     const data = await response.json();
+    console.log(`📦 Shopify search response:`, data);
     
     // Return the first matching product
     if (data.products && data.products.length > 0) {
+      console.log(`✅ Found ${data.products.length} products for "${productName}"`);
       return data.products[0];
     }
     
+    console.log(`❌ No products found for "${productName}"`);
     return null;
   } catch (error) {
-    console.error('Error searching Shopify:', error);
+    console.error(`❌ Error searching Shopify for "${productName}":`, error);
     return null;
   }
 }

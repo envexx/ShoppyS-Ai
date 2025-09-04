@@ -407,7 +407,14 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         
         // Process AI response to detect product mentions and create interactive text
         // Use smart Shopify search instead of local database
-        const detectedProducts = await detectProductsFromShopify(aiContent);
+        let detectedProducts = [];
+        try {
+          detectedProducts = await detectProductsFromShopify(aiContent);
+        } catch (error) {
+          console.error('❌ Shopify product detection failed, falling back to local detection:', error);
+          // Fallback to local product detection
+          detectedProducts = detectProductsInText(aiContent);
+        }
         
         // Format the AI response for better readability
         let processedText = formatAIResponseForDisplay(aiContent);
@@ -434,7 +441,7 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         setMessages(prev => [...prev, aiMessage]);
         
         // Save messages to localStorage
-        const sessionId = data.data.sessionId || currentSessionId;
+        const sessionId = data.sessionId || currentSessionId;
         
         if (sessionId) {
           // Save user message

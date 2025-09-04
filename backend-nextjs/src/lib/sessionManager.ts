@@ -23,7 +23,7 @@ export class SessionManager {
     try {
       const session = await prisma.chatSession.create({
         data: {
-          userId: userId || null,
+          userId: userId || undefined,
           title: 'New Chat',
           isActive: true,
         },

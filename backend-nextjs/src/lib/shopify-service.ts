@@ -7,6 +7,14 @@ export class ShopifyService {
   private adminClient: AxiosInstance;
 
   constructor() {
+    console.log('🔧 Initializing ShopifyService with config:', {
+      storefrontUrl: SHOPIFY_CONFIG.endpoints.storefront,
+      adminUrl: SHOPIFY_CONFIG.endpoints.admin,
+      hasStorefrontToken: !!SHOPIFY_CONFIG.storefrontApiToken,
+      hasAdminToken: !!SHOPIFY_CONFIG.adminApiToken,
+      storeName: SHOPIFY_CONFIG.storeName
+    });
+    
     // Storefront API Client (untuk customer-facing operations)
     this.storefrontClient = axios.create({
       baseURL: SHOPIFY_CONFIG.endpoints.storefront,
