@@ -130,7 +130,7 @@ export class SessionManager {
           sessionId,
           role,
           content,
-          metadata: metadata ? JSON.stringify(metadata) : null,
+          metadata: metadata ? JSON.stringify(metadata) : undefined,
         },
       });
 
