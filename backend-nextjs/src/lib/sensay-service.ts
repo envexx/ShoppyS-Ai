@@ -59,6 +59,16 @@ export class SensayService {
    */
   async sendMessage(userId: string, message: string, sessionId?: string): Promise<any> {
     try {
+      // Validate session ownership if sessionId is provided
+      if (sessionId) {
+        const isValidSession = await this.validateSessionOwnership(sessionId, userId);
+        if (!isValidSession) {
+          console.error(`❌ Session ${sessionId} does not belong to user ${userId}`);
+          throw new Error('Invalid session access');
+        }
+        console.log(`✅ Session ${sessionId} validated for user ${userId}`);
+      }
+
       // Get or create Sensay user
       const sensayUserId = await this.getOrCreateSensayUser(userId);
       
@@ -251,9 +261,16 @@ export class SensayService {
    */
   async getOrCreateChatSession(userId: string): Promise<string> {
     try {
-      // Check for existing active session
+      // Check for existing active session (within last 30 minutes)
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      
       let session = await prisma.chatSession.findFirst({
-        where: { userId },
+        where: { 
+          userId,
+          updatedAt: {
+            gte: thirtyMinutesAgo
+          }
+        },
         orderBy: { updatedAt: 'desc' }
       });
 
@@ -262,12 +279,34 @@ export class SensayService {
         session = await prisma.chatSession.create({
           data: { userId }
         });
+        console.log(`✅ Created new chat session ${session.id} for user ${userId}`);
+      } else {
+        console.log(`✅ Using existing chat session ${session.id} for user ${userId}`);
       }
 
       return session.id;
     } catch (error) {
       console.error('Error managing chat session:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Validate session belongs to user
+   */
+  async validateSessionOwnership(sessionId: string, userId: string): Promise<boolean> {
+    try {
+      const session = await prisma.chatSession.findFirst({
+        where: {
+          id: sessionId,
+          userId: userId
+        }
+      });
+      
+      return !!session;
+    } catch (error) {
+      console.error('Error validating session ownership:', error);
+      return false;
     }
   }
 
@@ -300,14 +339,25 @@ export class SensayService {
   /**
    * Get chat history for user
    */
-  async getChatHistory(userId: string, limit: number = 50): Promise<any[]> {
+  async getChatHistory(userId: string, limit: number = 50, sessionId?: string): Promise<any[]> {
     try {
+      const whereClause: any = {
+        session: {
+          userId
+        }
+      };
+
+      // If sessionId is provided, validate it belongs to the user and filter by it
+      if (sessionId) {
+        const isValidSession = await this.validateSessionOwnership(sessionId, userId);
+        if (!isValidSession) {
+          throw new Error('Invalid session access');
+        }
+        whereClause.sessionId = sessionId;
+      }
+
       const messages = await prisma.chatMessage.findMany({
-        where: {
-          session: {
-            userId
-          }
-        },
+        where: whereClause,
         include: {
           session: true
         },
@@ -1087,6 +1137,13 @@ export class SensayService {
     shopifyProducts: any[]
   ): Promise<void> {
     try {
+      // Validate session ownership before saving
+      const isValidSession = await this.validateSessionOwnership(sessionId, userId);
+      if (!isValidSession) {
+        console.error(`❌ Cannot save message to session ${sessionId} - does not belong to user ${userId}`);
+        throw new Error('Invalid session access for message saving');
+      }
+
       // Save user message
       await prisma.chatMessage.create({
         data: {
@@ -1108,6 +1165,14 @@ export class SensayService {
           shopifyProducts: shopifyProducts.length > 0 ? shopifyProducts : undefined
         }
       });
+
+      // Update session timestamp
+      await prisma.chatSession.update({
+        where: { id: sessionId },
+        data: { updatedAt: new Date() }
+      });
+
+      console.log(`✅ Saved chat message to session ${sessionId} for user ${userId}`);
     } catch (error) {
       console.error('Error saving chat message:', error);
       // Don't throw here, as this is not critical for the user experience

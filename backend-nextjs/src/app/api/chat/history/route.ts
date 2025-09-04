@@ -18,8 +18,17 @@ async function handler(request: NextRequest) {
 
     const url = new URL(request.url);
     const limit = parseInt(url.searchParams.get('limit') || '50');
+    const sessionId = url.searchParams.get('sessionId');
 
-    const history = await sensayService.getChatHistory(user.id, limit);
+    // If sessionId is provided, validate it belongs to the user
+    if (sessionId) {
+      const isValidSession = await sensayService.validateSessionOwnership(sessionId, user.id);
+      if (!isValidSession) {
+        return errorResponse('Invalid session access', 403);
+      }
+    }
+
+    const history = await sensayService.getChatHistory(user.id, limit, sessionId || undefined);
 
     return successResponse(history);
   } catch (error: any) {
