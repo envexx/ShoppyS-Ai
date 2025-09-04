@@ -375,29 +375,30 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         currentSessionId
       });
       
-      // Use the correct API endpoint for both new and existing chats
-      const endpoint = createApiUrl('/chat/send');
+      // Use new session management API
+      const endpoint = currentSessionId 
+        ? createApiUrl(`/chat/${currentSessionId}`)
+        : createApiUrl('/chat/new');
 
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
           message: userMessage.content,
-          sessionId: currentSessionId,
-          isNewChat: isNewChatMode
+          sessionId: currentSessionId
         })
       });
 
       const data = await response.json();
       console.log('📨 Chat response received:', {
         success: data.success,
-        sessionId: data.data?.sessionId,
-        isNewSession: data.data?.isNewSession,
-        response: data.data?.content?.substring(0, 100) + '...'
+        sessionId: data.sessionId,
+        title: data.title,
+        response: data.response?.substring(0, 100) + '...'
       });
 
       if (data.success) {
-        const aiContent = data.data.content || 'No response content';
+        const aiContent = data.response || 'No response content';
         
         // Log the original AI response from Sensay
         console.log('🤖 Original Sensay Response:', aiContent);
@@ -458,44 +459,29 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         }
         
         // Update currentSessionId with the session ID from response
-        if (data.data.sessionId) {
-          setCurrentSessionId(data.data.sessionId);
+        if (data.sessionId) {
+          setCurrentSessionId(data.sessionId);
           
           // If this was a new session or session ID changed, notify parent to switch to it
-          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== data.data.sessionId) && onSessionCreated) {
-            console.log('Session ID changed from', sessionIdToSend, 'to', data.data.sessionId);
-            onSessionCreated(data.data.sessionId);
+          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== data.sessionId) && onSessionCreated) {
+            console.log('Session ID changed from', sessionIdToSend, 'to', data.sessionId);
+            onSessionCreated(data.sessionId);
           }
         }
         
-                  // Update chat sessions in localStorage
-          chatStorage.saveSession({
-            id: sessionId,
-            title: userMessage.content.substring(0, 30) + (userMessage.content.length > 30 ? '...' : ''),
-            lastMessage: aiMessage.content.substring(0, 50) + (aiMessage.content.length > 50 ? '...' : ''),
-            timestamp: new Date().getTime(),
-            messageCount: 2, // User message + AI response
-            createdAt: new Date().getTime(),
-            updatedAt: new Date().getTime()
-          });
-          
-          // Handle cart actions if any
-        if (data.data.cartAction) {
-          console.log('🛒 Cart action detected:', data.data.cartAction);
-          
-          if (data.data.cartAction.success) {
-            // Update cart count
-            refreshCartCount();
-            
-            // Show success message
-            console.log('✅ Cart action successful:', data.data.cartAction.message);
-          } else {
-            console.warn('❌ Cart action failed:', data.data.cartAction.error);
-          }
-        }
+        // Update chat sessions in localStorage
+        chatStorage.saveSession({
+          id: sessionId,
+          title: userMessage.content.substring(0, 30) + (userMessage.content.length > 30 ? '...' : ''),
+          lastMessage: aiMessage.content.substring(0, 50) + (aiMessage.content.length > 50 ? '...' : ''),
+          timestamp: new Date().getTime(),
+          messageCount: 2, // User message + AI response
+          createdAt: new Date().getTime(),
+          updatedAt: new Date().getTime()
+        });
         
         // Check if response indicates cart action and refresh cart count (fallback)
-        const responseText = (data.data.content || '').toLowerCase();
+        const responseText = (data.response || '').toLowerCase();
         if (responseText.includes('added to cart') || 
             responseText.includes('🛒') || 
             responseText.includes('cart') ||

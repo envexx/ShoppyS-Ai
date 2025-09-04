@@ -4,14 +4,14 @@ import { getUserFromToken } from '@/lib/auth';
 import { prisma } from '@/lib/database';
 import { cacheService } from '@/lib/cache';
 
-async function handlePut(request: NextRequest, { params }: { params: { itemId: string } }) {
+async function handlePut(request: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   const user = await getUserFromToken(request);
   if (!user) {
     return errorResponse('Unauthorized', 401);
   }
 
   try {
-    const { itemId } = params;
+    const { itemId } = await context.params;
     const body = await request.json();
     const { quantity } = body;
     
@@ -66,14 +66,14 @@ async function handlePut(request: NextRequest, { params }: { params: { itemId: s
   }
 }
 
-async function handleDelete(request: NextRequest, { params }: { params: { itemId: string } }) {
+async function handleDelete(request: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   const user = await getUserFromToken(request);
   if (!user) {
     return errorResponse('Unauthorized', 401);
   }
 
   try {
-    const { itemId } = params;
+    const { itemId } = await context.params;
     
     // Use transaction for atomic delete with cart totals
     const result = await prisma.$transaction(async (tx) => {
@@ -117,7 +117,7 @@ async function handleDelete(request: NextRequest, { params }: { params: { itemId
   }
 }
 
-async function handler(request: NextRequest, context: { params: { itemId: string } }) {
+async function handler(request: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   switch (request.method) {
     case 'PUT':
       return handlePut(request, context);

@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchProductsInShopify } from '../../../../lib/shopify-service';
 
 export async function POST(request: NextRequest) {
+  let query: string = '';
+  
   try {
-    const { query } = await request.json();
+    const body = await request.json();
+    query = body.query;
     
     if (!query) {
       return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 });
@@ -22,7 +25,7 @@ export async function POST(request: NextRequest) {
       query: query
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error searching Shopify:', error);
     return NextResponse.json(
       { error: 'Failed to search Shopify products' },

@@ -5,7 +5,7 @@ import { ShopifyService } from '@/lib/shopify-service';
 
 const shopifyService = new ShopifyService();
 
-async function handler(request: NextRequest, { params }: { params: { handle: string } }) {
+async function handler(request: NextRequest, context: { params: Promise<{ handle: string }> }) {
   if (request.method !== 'GET') {
     return errorResponse('Method not allowed', 405);
   }
@@ -16,7 +16,7 @@ async function handler(request: NextRequest, { params }: { params: { handle: str
       return errorResponse('Unauthorized', 401);
     }
 
-    const { handle } = params;
+    const { handle } = await context.params;
     
     if (!handle) {
       return errorResponse('Product handle is required', 400);

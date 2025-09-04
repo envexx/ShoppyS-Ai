@@ -5,9 +5,9 @@ import { SensayService } from '../../../../lib/sensay-service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  context: { params: Promise<{ sessionId: string }> }
 ) {
-  const { sessionId } = params;
+  const { sessionId } = await context.params;
 
   try {
     const sessionData = await SessionManager.getSession(sessionId);
@@ -37,9 +37,9 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  context: { params: Promise<{ sessionId: string }> }
 ) {
-  const { sessionId } = params;
+  const { sessionId } = await context.params;
 
   try {
     console.log('🔄 POST /api/chat/[sessionId] - Continuing chat in session:', sessionId);
@@ -97,9 +97,9 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  context: { params: Promise<{ sessionId: string }> }
 ) {
-  const { sessionId } = params;
+  const { sessionId } = await context.params;
 
   try {
     await SessionManager.deleteSession(sessionId);
