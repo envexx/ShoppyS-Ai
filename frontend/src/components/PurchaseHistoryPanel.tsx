@@ -42,16 +42,17 @@ const PurchaseHistoryPanel = ({ onBack }: PurchaseHistoryPanelProps) => {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(price);
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

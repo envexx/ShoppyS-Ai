@@ -1,4 +1,5 @@
 
+
 import { SensayAPIComplete } from './sensay-api-complete';
 import { prisma } from './database';
 // @ts-ignore
@@ -76,6 +77,10 @@ export class SensayService {
       console.log(`Message: "${message}"`);
       console.log(`Using replica: ${this.replicaUUID}`);
 
+      // NATURAL APPROACH: Don't send product data to Sensay - let it respond naturally
+      let storeProductsContext = '';
+      console.log('🔍 Natural mode: Not sending product data to Sensay');
+
       // Check if this is a cart-related query and get current cart state
       const isCartQuery = this.isCartRelatedQuery(message);
       let cartContext = '';
@@ -102,13 +107,16 @@ export class SensayService {
         }
       }
 
-      // Send to Sensay with cart context if needed
-      const messageWithContext = isCartQuery ? message + cartContext : message;
+      // Send to Sensay with natural context (no product data)
+      const messageWithContext = message + cartContext;
       const chatResponse = await this.sensayAPI.chatWithReplica(
         this.replicaUUID,
         sensayUserId,
         messageWithContext
       );
+
+      // Log the original response from Sensay AI
+      console.log('🤖 Original Sensay AI Response:', chatResponse.content);
 
       // After getting Sensay response, analyze for different intents
       let shopifyProducts: any[] = [];
@@ -170,135 +178,36 @@ export class SensayService {
         content: chatResponse.content.substring(0, 200) + '...'
       });
       
-      // Always check for product mentions in AI response and search for them
-      console.log('🔍 Checking for product mentions in AI response...');
-      try {
-        // Extract product names from AI response
-        const mentionedProducts = this.extractProductMentionsFromResponse(chatResponse.content);
-        console.log('📦 Extracted product mentions:', mentionedProducts);
-        
-        if (mentionedProducts.length > 0) {
-          // Search for each mentioned product in Shopify
-          const allFoundProducts: any[] = [];
-          
-          for (const productName of mentionedProducts) {
-            try {
-              console.log(`🔍 Searching Shopify for mentioned product: "${productName}"`);
-              const foundProducts = await this.shopifyService.searchProducts(productName, 2);
-              console.log(`✅ Found ${foundProducts.length} products for "${productName}":`, foundProducts.map((p: any) => p.title));
-              allFoundProducts.push(...foundProducts);
-            } catch (error) {
-              console.warn(`❌ Failed to search for mentioned product "${productName}":`, error);
-            }
-          }
-          
-          // Remove duplicates and limit results
-          const uniqueProducts = allFoundProducts.filter((product, index, self) => 
-            index === self.findIndex(p => p.id === product.id)
-          );
-          
-          shopifyProducts = uniqueProducts.slice(0, 5);
-          console.log(`✅ Final result: Found ${shopifyProducts.length} unique products from mentioned products:`, shopifyProducts.map((p: any) => p.title));
-        }
-      } catch (shopifyError) {
-        console.warn('❌ Shopify search for mentioned products failed:', shopifyError);
-      }
+      // NATURAL APPROACH: Don't search Shopify automatically - let frontend handle product detection
+      console.log('🔍 Natural mode: Not searching Shopify automatically');
+      shopifyProducts = []; // Let frontend detect products from AI response
       
-      // Original product recommendation logic (keep as fallback)
-      if (isRecommendingProducts && !isGeneralInformation && shopifyProducts.length === 0) {
-        console.log('🛍️ Sensay is recommending products, searching Shopify...');
-        try {
-          // Extract specific product recommendations from Sensay response
-          const recommendedProducts = this.extractRecommendedProducts(chatResponse.content);
-          console.log('📦 Extracted recommended products:', recommendedProducts);
-          
-          if (recommendedProducts.length > 0) {
-            // Search for each recommended product specifically
-            const allFoundProducts: any[] = [];
-            
-            for (const product of recommendedProducts) {
-              try {
-                console.log(`🔍 Searching Shopify for: "${product.searchQuery}"`);
-                const foundProducts = await this.shopifyService.searchProducts(product.searchQuery, 3);
-                console.log(`✅ Found ${foundProducts.length} products for "${product.searchQuery}":`, foundProducts.map((p: any) => p.title));
-                allFoundProducts.push(...foundProducts);
-              } catch (error) {
-                console.warn(`❌ Failed to search for product "${product.name}":`, error);
-              }
-            }
-            
-            // If we didn't find enough products with specific searches, try general search
-            if (allFoundProducts.length < 2) {
-              console.log('🔍 Not enough specific products found, trying general search...');
-              const userKeywords = this.extractProductKeywords(message);
-              const responseKeywords = this.extractProductKeywords(chatResponse.content);
-              const allKeywords = [...new Set([...userKeywords, ...responseKeywords])];
-              
-              console.log('🔍 General search keywords:', allKeywords);
-              
-              if (allKeywords.length > 0) {
-                const generalProducts = await this.shopifyService.searchProducts(allKeywords.join(' '), 5);
-                console.log(`✅ Found ${generalProducts.length} products with general search:`, generalProducts.map((p: any) => p.title));
-                allFoundProducts.push(...generalProducts);
-              }
-            }
-            
-            // Remove duplicates and limit results
-            const uniqueProducts = allFoundProducts.filter((product, index, self) => 
-              index === self.findIndex(p => p.id === product.id)
-            );
-            
-            shopifyProducts = uniqueProducts.slice(0, 5);
-            console.log(`✅ Final result: Found ${shopifyProducts.length} unique products from Shopify:`, shopifyProducts.map((p: any) => p.title));
-          } else {
-            console.log('⚠️ No recommended products extracted, trying fallback search...');
-            // Fallback to general keyword search
-            const userKeywords = this.extractProductKeywords(message);
-            const responseKeywords = this.extractProductKeywords(chatResponse.content);
-            const allKeywords = [...new Set([...userKeywords, ...responseKeywords])];
-            
-            console.log('🔍 Fallback search keywords:', allKeywords);
-            
-            if (allKeywords.length > 0) {
-              shopifyProducts = await this.shopifyService.searchProducts(allKeywords.join(' '), 5);
-              console.log(`✅ Found ${shopifyProducts.length} products from Shopify for keywords:`, allKeywords);
-            }
-          }
-        } catch (shopifyError) {
-          console.warn('❌ Shopify search failed:', shopifyError);
-        }
-      } else {
-        console.log('❌ Product recommendation conditions not met:', {
-          isRecommendingProducts,
-          isGeneralInformation,
-          shopifyProductsCount: shopifyProducts.length
-        });
-      }
+      // NATURAL APPROACH: No automatic Shopify search - let frontend handle product detection
+      console.log('🔍 Natural mode: No automatic Shopify search');
 
-      // Save to our database
+      // Save to our database (natural mode - no Shopify products)
       if (sessionId) {
-        await this.saveChatMessage(userId, sessionId, message, chatResponse, shopifyProducts);
+        await this.saveChatMessage(userId, sessionId, message, chatResponse, []);
       }
 
       // Log API usage
       await this.logApiUsage(userId, 'chat', { message, sessionId }, chatResponse);
 
+      // Clean the response to remove URLs and links
+      const cleanedContent = this.cleanSensayResponse(chatResponse.content);
+
       const finalResponse = {
-        content: chatResponse.content,
+        content: cleanedContent,
         role: 'assistant',
         timestamp: new Date().toISOString(),
-        shopifyProducts: shopifyProducts.length > 0 ? shopifyProducts : undefined,
         cartAction: cartAction || undefined
       };
       
-      console.log('📤 Final response being sent to frontend:', {
+      console.log('📤 Natural mode response being sent to frontend:', {
         hasCartAction: !!finalResponse.cartAction,
         cartAction: finalResponse.cartAction,
-        cartActionType: typeof finalResponse.cartAction,
-        cartActionKeys: finalResponse.cartAction ? Object.keys(finalResponse.cartAction) : 'null',
         contentLength: finalResponse.content.length,
-        shopifyProductsCount: shopifyProducts.length,
-        originalCartAction: cartAction
+        mode: 'natural'
       });
       
       return finalResponse;
@@ -1567,46 +1476,13 @@ export class SensayService {
 
   /**
    * Extract product mentions from AI response.
-   * This method looks for product names in various formats in the AI response.
+   * This method looks for product names that are actually mentioned by the AI.
    */
   private extractProductMentionsFromResponse(response: string): string[] {
     const productMentions: string[] = [];
     
-    // Look for product names in bold format (e.g., **Product Name**)
-    const boldMatches = response.match(/\*\*([^*]+)\*\*/g);
-    if (boldMatches) {
-      for (const match of boldMatches) {
-        const productName = match.replace(/\*\*/g, '').trim();
-        if (productName.length > 3 && productName.length < 100) {
-          productMentions.push(productName);
-        }
-      }
-    }
-
-    // Look for product names in quotes (e.g., "Product Name")
-    const quotedMatches = response.match(/"([^"]+)"/g);
-    if (quotedMatches) {
-      for (const match of quotedMatches) {
-        const productName = match.replace(/"/g, '').trim();
-        if (productName.length > 3 && productName.length < 100) {
-          productMentions.push(productName);
-        }
-      }
-    }
-    
-    // Look for product mentions with prices (e.g., "Burgundy Statement Tee - $23")
-    const productPricePattern = /([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))\s*-\s*\$(\d+(?:\.\d{2})?)/gi;
-    const priceMatches = response.matchAll(productPricePattern);
-    
-    for (const match of priceMatches) {
-      const productName = match[1].trim();
-      if (productName.length > 3 && productName.length < 100) {
-        productMentions.push(productName);
-      }
-    }
-    
-    // Look for numbered product mentions (e.g., "1. Burgundy Statement Tee")
-    const numberedProductPattern = /^\d+\.\s+([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gim;
+    // Look for numbered product mentions (e.g., "1. Classic Striped Button-Up Shirt - $35")
+    const numberedProductPattern = /^\d+\.\s+([A-Za-z\s]+(?:Shirt|Tee|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))\s*-\s*\$(\d+(?:\.\d{2})?)/gim;
     const numberedMatches = response.matchAll(numberedProductPattern);
     
     for (const match of numberedMatches) {
@@ -1616,33 +1492,22 @@ export class SensayService {
       }
     }
     
-    // Look for specific product mentions without prices (e.g., "the Burgundy Statement Tee")
-    const specificProductPattern = /(?:the|a|an)\s+([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gi;
-    const specificMatches = response.matchAll(specificProductPattern);
+    // Look for product mentions with prices (e.g., "Classic Striped Button-Up Shirt - $35")
+    const productPricePattern = /([A-Za-z\s]+(?:Shirt|Tee|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))\s*-\s*\$(\d+(?:\.\d{2})?)/gi;
+    const priceMatches = response.matchAll(productPricePattern);
     
-    for (const match of specificMatches) {
+    for (const match of priceMatches) {
       const productName = match[1].trim();
       if (productName.length > 3 && productName.length < 100) {
         productMentions.push(productName);
       }
     }
     
-    // Look for product names mentioned in cart-related context
-    const cartProductPattern = /(?:added|adding|add)\s+(?:the|a|an)?\s*([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gi;
-    const cartMatches = response.matchAll(cartProductPattern);
+    // Look for product names in bold format (e.g., **Product Name**)
+    const boldProductPattern = /\*\*([^*]+(?:Shirt|Tee|Dress|Pants|Jeans|Jacket|Hoodie|Sweater)[^*]*)\*\*/gi;
+    const boldMatches = response.matchAll(boldProductPattern);
     
-    for (const match of cartMatches) {
-      const productName = match[1].trim();
-      if (productName.length > 3 && productName.length < 100) {
-        productMentions.push(productName);
-      }
-    }
-    
-    // Look for product names in recommendation context
-    const recommendationPattern = /(?:here are|here's|i recommend|i suggest|check out|great options|perfect choice|you might like|consider)\s+(?:the|a|an)?\s*([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gi;
-    const recommendationMatches = response.matchAll(recommendationPattern);
-    
-    for (const match of recommendationMatches) {
+    for (const match of boldMatches) {
       const productName = match[1].trim();
       if (productName.length > 3 && productName.length < 100) {
         productMentions.push(productName);
@@ -1653,12 +1518,53 @@ export class SensayService {
     const uniqueMentions = [...new Set(productMentions)].filter(name => {
       const lowercaseName = name.toLowerCase();
       // Filter out common words that aren't product names
-      const commonWords = ['the', 'and', 'for', 'with', 'like', 'want', 'need', 'looking', 'show', 'find', 'could', 'would', 'something', 'budget', 'range', 'prefer', 'comfortable', 'options', 'choices', 'recommendations'];
+      const commonWords = ['the', 'and', 'for', 'with', 'like', 'want', 'need', 'looking', 'show', 'find', 'could', 'would', 'something', 'budget', 'range', 'prefer', 'comfortable', 'options', 'choices', 'recommendations', 'casual', 'trendy', 'stylish', 'perfect', 'great', 'good', 'excellent', 'amazing', 'wonderful'];
       return !commonWords.some(word => lowercaseName.includes(word));
     });
     
     console.log('📦 Extracted product mentions from AI response:', uniqueMentions);
     return uniqueMentions;
+  }
+
+  /**
+   * Clean Sensay response by removing product URLs and links
+   */
+  private cleanSensayResponse(response: string): string {
+    console.log('🧹 Cleaning Sensay response...');
+    console.log('Original response:', response);
+    
+    let cleanedResponse = response;
+    
+    // Remove markdown links: [text](url) - keep only the text
+    cleanedResponse = cleanedResponse.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    
+    // Remove plain URLs (http/https)
+    cleanedResponse = cleanedResponse.replace(/https?:\/\/[^\s\)]+/g, '');
+    
+    // Remove Shopify product URLs specifically
+    cleanedResponse = cleanedResponse.replace(/https:\/\/shoppysensay\.myshopify\.com\/products\/[^\s\)]+/g, '');
+    
+    // Remove any remaining URL patterns
+    cleanedResponse = cleanedResponse.replace(/www\.[^\s\)]+/g, '');
+    cleanedResponse = cleanedResponse.replace(/\.com[^\s\)]*/g, '');
+    cleanedResponse = cleanedResponse.replace(/\.myshopify\.com[^\s\)]*/g, '');
+    
+    // Clean up extra spaces and formatting
+    cleanedResponse = cleanedResponse.replace(/\s+/g, ' ').trim();
+    
+    // Remove empty parentheses or brackets
+    cleanedResponse = cleanedResponse.replace(/\(\s*\)/g, '');
+    cleanedResponse = cleanedResponse.replace(/\[\s*\]/g, '');
+    
+    // Clean up multiple spaces
+    cleanedResponse = cleanedResponse.replace(/\s{2,}/g, ' ');
+    
+    // Remove any trailing punctuation that might be left from URL removal
+    cleanedResponse = cleanedResponse.replace(/\s*[,\s]*$/g, '');
+    
+    console.log('✅ Response cleaned:', cleanedResponse);
+    
+    return cleanedResponse;
   }
 }
 

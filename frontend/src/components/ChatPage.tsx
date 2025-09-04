@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ChatSidebar from './ChatSidebar';
 import ChatArea from './ChatArea';
 import SidePanel from './SidePanel';
+import SimpleURLManager from '../utils/simpleUrlManager';
+import { chatStorage } from '../utils/chatStorage';
 
 interface User {
   id: string;
@@ -17,6 +19,7 @@ interface ChatPageProps {
 
 const ChatPage = ({ onLogout }: ChatPageProps) => {
   const navigate = useNavigate();
+  const { sessionId } = useParams<{ sessionId: string }>();
   const [selectedChat, setSelectedChat] = useState('new-chat');
   const [user, setUser] = useState<User | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -39,6 +42,25 @@ const ChatPage = ({ onLogout }: ChatPageProps) => {
     }
   }, []);
 
+  // Handle session ID from URL directly (seperti contoh Anda)
+  useEffect(() => {
+    console.log('🔄 ChatPage useEffect: sessionId =', sessionId);
+    
+    if (sessionId === 'new') {
+      // New chat session
+      console.log('🆕 Setting up new chat session');
+      setSelectedChat('new-chat');
+    } else if (sessionId) {
+      // Existing chat session
+      console.log('📝 Loading existing session:', sessionId);
+      setSelectedChat(sessionId);
+    } else {
+      // No session ID, redirect to new chat
+      console.log('🔄 No session ID, redirecting to new chat');
+      window.history.replaceState(null, '', '/chat/new');
+    }
+  }, [sessionId]);
+
   // User is already authenticated when reaching this page through routing
 
   const handleLogout = () => {
@@ -58,6 +80,12 @@ const ChatPage = ({ onLogout }: ChatPageProps) => {
     console.log('New chat session created, switching to:', sessionId);
     setSelectedChat(sessionId);
     setRefreshTrigger(prev => prev + 1);
+    
+    // Update URL tanpa reload menggunakan replaceState (seperti contoh Anda)
+    window.history.replaceState(null, '', `/chat/${sessionId}`);
+    
+    // Update browser title
+    SimpleURLManager.updateTitle(sessionId);
   };
 
   const handleCartClick = () => {
@@ -162,6 +190,7 @@ const ChatPage = ({ onLogout }: ChatPageProps) => {
           <ChatArea 
             selectedChat={selectedChat} 
             user={user} 
+            isNewChat={selectedChat === 'new-chat'}
             onSessionCreated={handleNewChatCreated}
             onCartClick={handleCartClick}
             onHistoryClick={handleHistoryClick}

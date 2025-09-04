@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { withMiddleware, errorResponse, successResponse } from '@/lib/middleware';
-import { getUserFromToken } from '@/lib/auth';
-import { SensayService } from '@/lib/sensay-service';
+import { withMiddleware, errorResponse, successResponse } from '../../../../lib/middleware';
+import { getUserFromToken } from '../../../../lib/auth';
+import { SensayService } from '../../../../lib/sensay-service';
 
 const sensayService = new SensayService();
 

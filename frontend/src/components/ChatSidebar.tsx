@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, LogOut, MessageCircle, Clock, MoreVertical, RefreshCw, Plus, Moon, Sun } from 'lucide-react';
 import * as api from '../services/api';
+import { URL_MANAGER } from '../utils/urlManager';
+import { chatStorage, ChatSession } from '../utils/chatStorage';
+import { createApiUrl, getAuthHeaders } from '../config/api';
 
 interface User {
   id: string;
@@ -8,16 +12,6 @@ interface User {
   username: string;
   sensayUserId?: string;
 }
-
-interface ChatSession {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: string;
-  messageCount: number;
-}
-
-
 
 interface ChatSidebarProps {
   selectedChat: string;
@@ -28,6 +22,7 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigger }: ChatSidebarProps) => {
+  const navigate = useNavigate();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -91,18 +86,55 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
   const loadChatSessions = async () => {
     try {
       setHistoryLoading(true);
+      
+      // Load dari localStorage terlebih dahulu untuk performa cepat
+      const localSessions = chatStorage.getChatSessions();
+      const localSessionsArray = Object.values(localSessions).sort((a, b) => b.timestamp - a.timestamp);
+      setChatSessions(localSessionsArray);
+      
+      // Kemudian sync dengan server untuk data terbaru
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.warn('No token found, skipping chat sessions load');
-        return;
+      if (token) {
+        try {
+          const API_BASE_URL = import.meta.env.DEV 
+            ? 'http://localhost:3000/api' 
+            : 'https://shoppy-s-ai-apc2.vercel.app/api';
+            
+          const response = await fetch(`${API_BASE_URL}/chat/sessions`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              const serverSessions = data.sessions.map((session: any) => ({
+                id: session.id,
+                title: session.title || 'New Chat',
+                lastMessage: '', // Server doesn't provide lastMessage
+                timestamp: new Date(session.updatedAt).getTime(),
+                messageCount: session.messageCount || 0
+              }));
+              
+              // Merge dengan data lokal
+              const mergedSessions = [...localSessionsArray, ...serverSessions];
+              const uniqueSessions = mergedSessions.filter((session, index, self) => 
+                index === self.findIndex(s => s.id === session.id)
+              );
+              
+              setChatSessions(uniqueSessions.sort((a, b) => b.timestamp - a.timestamp));
+            }
+          }
+        } catch (error) {
+          console.error('Error syncing with server:', error);
+          // Tetap gunakan data lokal jika server error
+        }
       }
       
-      const response = await api.getChatSessions();
-      setChatSessions(response.data);
-      setSessionsLoaded(true); // Mark as loaded
+      setSessionsLoaded(true);
     } catch (error) {
       console.error('Error loading chat sessions:', error);
-      // Don't show error to user for history loading failures
     } finally {
       setHistoryLoading(false);
     }
@@ -112,7 +144,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
 
 
 
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
@@ -138,6 +170,61 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
     }
   };
 
+  const handleNewChat = () => {
+    onChatSelect('new-chat');
+    // Update URL tanpa reload
+    window.history.replaceState(null, '', '/chat/new');
+  };
+
+  const handleChatSelect = (sessionId: string) => {
+    onChatSelect(sessionId);
+    // Update URL tanpa reload
+    window.history.replaceState(null, '', `/chat/${sessionId}`);
+  };
+
+  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent chat selection
+    
+    if (confirm('Are you sure you want to delete this chat session?')) {
+              try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            const API_BASE_URL = import.meta.env.DEV 
+              ? 'http://localhost:3000/api' 
+              : 'https://shoppy-s-ai-apc2.vercel.app/api';
+              
+            const response = await fetch(`${API_BASE_URL}/chat/${sessionId}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+          
+          if (response.ok) {
+            // Remove from local state
+            setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+            // Remove from localStorage
+            chatStorage.deleteSession(sessionId);
+            
+            // If this was the selected chat, switch to new chat
+            if (selectedChat === sessionId) {
+              handleNewChat();
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting session:', error);
+        // Fallback to localStorage only
+        chatStorage.deleteSession(sessionId);
+        setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+        
+        if (selectedChat === sessionId) {
+          handleNewChat();
+        }
+      }
+    }
+  };
+
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     // You can add localStorage or context logic here
@@ -157,7 +244,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <img 
-              src="./ShoppyS logo .png" 
+              src="/ShoppyS logo .png" 
               alt="ShoppyS Logo" 
               className="w-8 h-8 rounded-lg shadow-lg"
             />
@@ -219,7 +306,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-300 font-sora">Chat</h2>
                 <button
-                  onClick={() => onChatSelect('new-chat')}
+                  onClick={handleNewChat}
                   className="flex items-center space-x-1 px-2 py-1 text-xs bg-[#71B836] hover:bg-[#71B836]/80 text-white rounded-lg transition-colors"
                   title="Start new chat"
                 >
@@ -230,7 +317,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
               
               {/* Current Chat or New Chat */}
               <div
-                onClick={() => onChatSelect('new-chat')}
+                onClick={handleNewChat}
                 className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                   selectedChat === 'new-chat' 
                     ? 'bg-[#71B836]/10 dark:bg-[#71B836]/20 border border-[#71B836]/30 dark:border-[#71B836]/50' 
@@ -277,7 +364,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
                     {chatSessions.slice(0, 5).map((session) => (
                     <div
                       key={session.id}
-                      onClick={() => onChatSelect(session.id)}
+                      onClick={() => handleChatSelect(session.id)}
                       className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                         selectedChat === session.id 
                           ? 'bg-[#71B836]/10 dark:bg-[#71B836]/20 border border-[#71B836]/30 dark:border-[#71B836]/50' 
@@ -298,7 +385,11 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
                         </div>
                       </div>
                       
-                      <button className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded">
+                      <button 
+                        onClick={(e) => handleDeleteSession(session.id, e)}
+                        className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded transition-colors"
+                        title="Delete session"
+                      >
                         <MoreVertical className="w-3 h-3 icon-glow-gray" />
                       </button>
                     </div>
@@ -326,7 +417,7 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
         <div className="p-4 border-t border-gray-200/50 flex-shrink-0">
           <div className="flex items-center space-x-3 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm rounded-lg p-3">
             <img 
-              src="./ShoppyS logo .png" 
+              src="/ShoppyS logo .png" 
               alt="ShoppyS Logo" 
               className="w-10 h-10 rounded-lg shadow-lg"
             />

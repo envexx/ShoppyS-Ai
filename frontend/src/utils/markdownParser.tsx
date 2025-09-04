@@ -19,6 +19,60 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
   let currentText = '';
 
   while (i < text.length) {
+    // Check for [Product Name](URL) links
+    if (text[i] === '[') {
+      // Add any accumulated text
+      if (currentText) {
+        result.push(currentText);
+        currentText = '';
+      }
+      
+      // Find the closing ] and opening (
+      const endBracket = text.indexOf(']', i + 1);
+      const startParen = text.indexOf('(', endBracket);
+      const endParen = text.indexOf(')', startParen);
+      
+      if (endBracket !== -1 && startParen !== -1 && endParen !== -1) {
+        const linkText = text.substring(i + 1, endBracket);
+        const linkUrl = text.substring(startParen + 1, endParen);
+        
+        // Fix broken product links (remove double links)
+        const cleanLinkText = linkText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        const cleanLinkUrl = linkUrl.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        
+        // Check if this is a product link
+        if (cleanLinkUrl.includes('shoppysensay.myshopify.com/products/')) {
+          result.push(
+            <a
+              key={`product-link-${keyCounter++}`}
+              href={linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#71B836] hover:text-[#5A9A2E] font-medium underline decoration-[#71B836]/30 hover:decoration-[#71B836] transition-all duration-200"
+            >
+              {cleanLinkText}
+            </a>
+          );
+        } else {
+          // Regular link
+          result.push(
+            <a
+              key={`link-${keyCounter++}`}
+              href={cleanLinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+            >
+              {cleanLinkText}
+            </a>
+          );
+        }
+        
+        i = endParen + 1;
+        continue;
+      }
+    }
+    
     // Check for **bold** text
     if (text.substr(i, 2) === '**') {
       // Add any accumulated text

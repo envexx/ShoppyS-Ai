@@ -12,7 +12,10 @@ import {
 import * as api from '../services/api';
 import ProductCard from './ProductCard';
 import { detectShoppingLinks, extractProductFromMessage } from '../utils/linkDetector';
+import { detectProductsInText, extractProductsFromAIResponse, extractMultipleProductRecommendations, detectProductsFromShopify } from '../utils/productDetector';
 import MarkdownText from '../utils/markdownParser';
+import { chatStorage, ChatMessage } from '../utils/chatStorage';
+import { createApiUrl, getAuthHeaders } from '../config/api';
 
 interface User {
   id: string;
@@ -24,7 +27,7 @@ interface User {
 interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   timestamp: string;
   link?: string;
   products?: ProductInfo[];
@@ -94,6 +97,81 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Improved AI response formatter for better display in chat UI
+   * This function cleans up the text while preserving structure and readability
+   */
+  function formatAIResponseForDisplay(responseText: string): string {
+    if (!responseText || typeof responseText !== 'string') {
+      return '';
+    }
+
+    let formattedText = responseText;
+    
+    // Remove URLs dan links
+    formattedText = formattedText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    formattedText = formattedText.replace(/https?:\/\/[^\s\)]+/g, '');
+    formattedText = formattedText.replace(/\(\s*\)/g, '');
+    formattedText = formattedText.replace(/\[\s*\]/g, '');
+    
+    // FIXED: Better markdown bold formatting preservation
+    // First, protect existing properly formatted bold text
+    const boldMatches: string[] = [];
+    formattedText = formattedText.replace(/\*\*([^*]+?)\*\*/g, (match, content) => {
+      boldMatches.push(match);
+      return `__BOLD_${boldMatches.length - 1}__`;
+    });
+    
+    // Now handle any broken bold formatting more carefully
+    // Only fix cases where bold text is followed by specific patterns
+    formattedText = formattedText.replace(/\*\*([^*]+?)(\s+-\s+[^*]+?)(\d+\.\s)/g, '**$1**$2\n\n$3');
+    formattedText = formattedText.replace(/\*\*([^*]+?)(\s+-\s+[^*]+?)(\.\s+[A-Z])/g, '**$1**$2$3');
+    
+    // Restore protected bold text
+    boldMatches.forEach((match, index) => {
+      formattedText = formattedText.replace(`__BOLD_${index}__`, match);
+    });
+    
+    // Add line breaks before numbered lists (but not inside bold text)
+    formattedText = formattedText.replace(/([^0-9])\s*(\d+\.\s)/g, '$1\n\n$2');
+    
+    // Also fix cases where numbered lists start without proper spacing
+    formattedText = formattedText.replace(/^(\d+\.\s)/gm, '\n\n$1');
+    
+    // Clean numbered lists
+    formattedText = formattedText.replace(/(\d+\.\s+[^0-9]+?)(\d+\.\s+)/g, '$1\n\n$2');
+    
+    // Clean whitespace
+    formattedText = formattedText.replace(/[ \t]+/g, ' ');
+    formattedText = formattedText.replace(/\n{3,}/g, '\n\n');
+    formattedText = formattedText.trim();
+    
+    return formattedText;
+  }
+
+  /**
+   * Alternative simpler formatter that preserves original structure better
+   */
+  function simpleFormatAIResponse(responseText: string): string {
+    if (!responseText || typeof responseText !== 'string') {
+      return '';
+    }
+
+    let formattedText = responseText;
+    
+    // Only remove URLs and links, keep everything else as is
+    formattedText = formattedText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    formattedText = formattedText.replace(/https?:\/\/[^\s\)]+/g, '');
+    formattedText = formattedText.replace(/\(\s*\)/g, '');
+    formattedText = formattedText.replace(/\[\s*\]/g, '');
+    
+    // Just clean up excessive whitespace
+    formattedText = formattedText.replace(/[ \t]+/g, ' ');
+    formattedText = formattedText.trim();
+    
+    return formattedText;
+  }
+
   // Load cart count on component mount
   useEffect(() => {
     const loadCartCount = async () => {
@@ -143,16 +221,10 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
     };
   }, [refreshCartCount]);
 
-  // Function to detect products in a message
+  // Function to detect products in a message (disabled for user messages)
   const detectProductsInMessage = (content: string): ProductInfo[] => {
-    // detectShoppingLinks already returns ProductInfo[]
-    const detectedProducts = detectShoppingLinks(content);
-    
-    // Also try to extract product recommendations from AI responses
-    const extractedProducts = extractProductFromMessage(content);
-    
-    // Combine both types of detection
-    return [...detectedProducts, ...extractedProducts];
+    // Don't detect products in user messages - only in AI responses
+    return [];
   };
 
   const scrollToBottom = () => {
@@ -164,46 +236,108 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
   }, [messages]);
 
   useEffect(() => {
-    if (user && !isNewChat && selectedChat && selectedChat !== 'new-chat') {
+    console.log('🔄 ChatArea useEffect triggered:', { 
+      user: !!user, 
+      isNewChat, 
+      selectedChat, 
+      currentSessionId 
+    });
+    
+    // Hanya load jika session berubah atau user baru login
+    if (user && !isNewChat && selectedChat && selectedChat !== 'new-chat' && selectedChat !== currentSessionId) {
+      console.log('📝 Loading existing chat history for session:', selectedChat);
       loadChatHistory(selectedChat);
       setCurrentSessionId(selectedChat);
     } else if (isNewChat || selectedChat === 'new-chat') {
-      // Clear messages for new chat
+      // Clear messages for new chat and reset session ID
+      console.log('🆕 NEW CHAT MODE - Clearing messages and session ID');
       setMessages([]);
       setCurrentSessionId(null);
+      setError(''); // Also clear any errors
+      setLoading(false); // Also clear loading state
+      console.log('✅ New chat mode - messages cleared, session ID reset');
     }
-  }, [user, selectedChat, isNewChat]);
+  }, [user, selectedChat, isNewChat, currentSessionId]);
 
   const loadChatHistory = async (sessionId: string) => {
     if (!user) return;
     
     try {
       console.log('Loading chat history for session:', sessionId);
-      // Load specific session history
-      const response = await api.getChatHistory(sessionId);
-      console.log('Chat history response for session:', sessionId, response); // Debug log
       
-      if (response.success && response.data && response.data.length > 0) {
-        // Add product detection to existing messages and restore saved Shopify products
-        const messagesWithProducts = response.data.map((msg: any) => {
-          const detectedProducts = detectProductsInMessage(msg.content);
-          return {
-            ...msg,
-            products: detectedProducts.length > 0 ? detectedProducts : undefined,
-            shopifyProducts: msg.shopifyProducts || undefined
-          };
-        });
-        setMessages(messagesWithProducts);
-        console.log(`Loaded ${messagesWithProducts.length} messages for session ${sessionId}`);
-      } else {
-        console.log('No messages found for session:', sessionId);
-        setMessages([]);
+      // Load dari localStorage terlebih dahulu untuk performa cepat
+      const localMessages = chatStorage.getSessionMessages(sessionId);
+      let finalMessages: Message[] = [];
+      
+      if (localMessages.length > 0) {
+        console.log(`📱 Loaded ${localMessages.length} messages from localStorage for session ${sessionId}`);
+        // Konversi ChatMessage ke Message format
+        finalMessages = localMessages.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          role: msg.role,
+          timestamp: new Date(msg.timestamp).toISOString(),
+          products: msg.products
+        }));
       }
+      
+      // Kemudian sync dengan server untuk data terbaru (hanya jika ada perbedaan)
+      try {
+        const response = await fetch(createApiUrl(`/chat/${sessionId}`), {
+          headers: getAuthHeaders(),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Chat history response for session:', sessionId, data);
+          
+          if (data.success && data.messages && data.messages.length > 0) {
+            const serverMessages = data.messages.map((msg: any) => ({
+              id: msg.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+              content: msg.content,
+              role: msg.role,
+              timestamp: msg.timestamp || new Date().toISOString(),
+              products: msg.products || undefined
+            }));
+            
+            // Bandingkan jumlah pesan untuk menentukan mana yang lebih lengkap
+            if (serverMessages.length > finalMessages.length) {
+              console.log(`🔄 Server has more messages (${serverMessages.length} vs ${finalMessages.length}), using server data`);
+              finalMessages = serverMessages;
+              
+                           // Update localStorage dengan data server yang lebih lengkap
+             serverMessages.forEach((msg: any) => {
+               chatStorage.saveMessage(sessionId, {
+                 id: msg.id,
+                 role: msg.role,
+                 content: msg.content,
+                 timestamp: new Date(msg.timestamp).getTime(),
+                 products: msg.products
+               });
+             });
+            } else {
+              console.log(`📱 Local storage has same or more messages (${finalMessages.length} vs ${serverMessages.length}), keeping local data`);
+            }
+          } else {
+            console.log('No messages found on server for session:', sessionId);
+            // Tetap gunakan data lokal jika ada
+          }
+        } else {
+          console.log('Failed to load chat history from server for session:', sessionId);
+          // Tetap gunakan data lokal jika server error
+        }
+      } catch (error) {
+        console.error('Failed to sync with server for session:', sessionId, error);
+        // Tetap gunakan data lokal jika server error
+      }
+      
+      // Set messages hanya sekali dengan data final
+      setMessages(finalMessages);
+      console.log(`✅ Final message count for session ${sessionId}: ${finalMessages.length}`);
+      
     } catch (error) {
       console.error('Failed to load chat history for session:', sessionId, error);
-      // If session not found, clear messages and show error
       setMessages([]);
-      // You could add a toast notification here to inform the user
     }
   };
 
@@ -212,14 +346,12 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
     if (!message.trim() || loading || !user) return;
 
     const messageContent = message.trim();
-    const detectedProducts = detectProductsInMessage(messageContent);
     
     const userMessage: Message = {
       id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}_${performance.now()}`,
       content: messageContent,
       role: 'user',
-      timestamp: new Date().toISOString(),
-      products: detectedProducts.length > 0 ? detectedProducts : undefined
+      timestamp: new Date().toISOString()
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -243,69 +375,104 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         currentSessionId
       });
       
-      const response = await api.sendChat(userMessage.content, isNewChatMode, sessionIdToSend);
-      console.log('📨 Chat response received:', {
-        success: response.success,
-        hasCartAction: !!response.data?.cartAction,
-        cartAction: response.data?.cartAction,
-        content: response.data?.content?.substring(0, 100) + '...',
-        isNewChatMode,
-        sessionId: sessionIdToSend,
-        isNewSession: response.data?.isNewSession
+      // Use new session management API
+      const endpoint = currentSessionId 
+        ? createApiUrl(`/chat/${currentSessionId}`)
+        : createApiUrl('/chat/new');
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          message: userMessage.content,
+          sessionId: currentSessionId
+        })
       });
-      if (response.success && response.data) {
-        const aiContent = response.data.content || 'No response content';
-        const aiDetectedProducts = detectProductsInMessage(aiContent);
+
+      const data = await response.json();
+      console.log('📨 Chat response received:', {
+        success: data.success,
+        sessionId: data.sessionId,
+        title: data.title,
+        response: data.response?.substring(0, 100) + '...'
+      });
+
+      if (data.success) {
+        const aiContent = data.response || 'No response content';
+        
+        // Log the original AI response from Sensay
+        console.log('🤖 Original Sensay Response:', aiContent);
+        console.log('📊 Response length:', aiContent.length);
+        console.log('📝 Response preview:', aiContent.substring(0, 200) + '...');
+        
+        // Process AI response to detect product mentions and create interactive text
+        // Use smart Shopify search instead of local database
+        const detectedProducts = await detectProductsFromShopify(aiContent);
+        
+        // Format the AI response for better readability
+        let processedText = formatAIResponseForDisplay(aiContent);
+        
+        // Create interactive text with clickable links (but keep it clean without markdown)
+        for (const product of detectedProducts) {
+          // Just replace product names with bold formatting, no links
+          const boldProductName = `**${product.name}**`;
+          const regex = new RegExp(`\\b${product.name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b`, 'gi');
+          processedText = processedText.replace(regex, boldProductName);
+        }
+        
+        // Preserve line breaks and structure after adding links
+        processedText = processedText.replace(/\\n\\s*\\n/g, '\\n\\n');
+        processedText = processedText.replace(/\\n{3,}/g, '\\n\\n');
         
         const aiMessage: Message = {
           id: `ai_${Date.now()}_${Math.random().toString(36).substring(2, 11)}_${performance.now()}`,
-          content: aiContent,
+          content: processedText, // Use processed text with clickable product links
           role: 'assistant',
-          timestamp: response.data.timestamp,
-          products: aiDetectedProducts.length > 0 ? aiDetectedProducts : undefined,
-          shopifyProducts: response.data.shopifyProducts // Include Shopify products from response
+          timestamp: new Date().toISOString(),
+          products: detectedProducts.length > 0 ? detectedProducts : undefined // Use detected products from Shopify
         };
         setMessages(prev => [...prev, aiMessage]);
         
-        // Update currentSessionId with the session ID from response
-        if (response.data.sessionId) {
-          setCurrentSessionId(response.data.sessionId);
+        // Save messages to localStorage
+        if (currentSessionId || data.sessionId) {
+          const sessionId = data.sessionId || currentSessionId;
           
-          // If this was a new session or session ID changed, notify parent to switch to it
-          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== response.data.sessionId || response.data.isNewSession) && onSessionCreated) {
-            console.log('Session ID changed from', sessionIdToSend, 'to', response.data.sessionId, 'isNewSession:', response.data.isNewSession);
-            onSessionCreated(response.data.sessionId);
+          if (sessionId) {
+            // Save user message
+            chatStorage.saveMessage(sessionId, {
+              id: userMessage.id,
+              role: 'user',
+              content: userMessage.content,
+              timestamp: new Date(userMessage.timestamp).getTime(),
+              products: userMessage.products
+            });
+            
+            // Save AI message
+            chatStorage.saveMessage(sessionId, {
+              id: aiMessage.id,
+              role: 'assistant',
+              content: aiMessage.content,
+              timestamp: new Date(aiMessage.timestamp).getTime(),
+              products: aiMessage.products
+            });
+            
+            console.log(`💾 Saved messages to localStorage for session ${sessionId}`);
           }
         }
         
-        // Handle automatic cart actions from Sensay
-        if (response.data.cartAction) {
-          console.log('🛒 Cart action detected:', response.data.cartAction);
+        // Update currentSessionId with the session ID from response
+        if (data.sessionId) {
+          setCurrentSessionId(data.sessionId);
           
-          if (response.data.cartAction.success) {
-            console.log('✅ Cart action successful:', response.data.cartAction.message);
-            // Show success message for auto add to cart
-            const cartSuccessMessage: Message = {
-              id: `cart_success_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-              content: `✅ ${response.data.cartAction.message}`,
-              role: 'assistant',
-              timestamp: new Date().toISOString(),
-            };
-            setMessages(prev => [...prev, cartSuccessMessage]);
-            
-            // Refresh cart count
-            console.log('🔄 Refreshing cart count after successful cart action');
-            refreshCartCount();
-          } else {
-            // Show error message if auto add to cart failed
-            console.warn('❌ Auto add to cart failed:', response.data.cartAction.error);
+          // If this was a new session or session ID changed, notify parent to switch to it
+          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== data.sessionId) && onSessionCreated) {
+            console.log('Session ID changed from', sessionIdToSend, 'to', data.sessionId);
+            onSessionCreated(data.sessionId);
           }
-        } else {
-          console.log('ℹ️ No cart action in response');
         }
         
         // Check if response indicates cart action and refresh cart count (fallback)
-        const responseText = (response.data.content || '').toLowerCase();
+        const responseText = (data.response || '').toLowerCase();
         if (responseText.includes('added to cart') || 
             responseText.includes('🛒') || 
             responseText.includes('cart') ||
@@ -321,7 +488,7 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
         
         // Product detection is now handled inline with ProductCard
       } else {
-        console.error('Invalid response structure:', response);
+        console.error('Invalid response structure:', data);
         setError('Received invalid response from server');
       }
     } catch (error) {
@@ -452,44 +619,37 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
                 <div
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                    msg.role === 'user'
-                      ? 'bg-[#71B836] text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200'
-                  }`}
-                >
-                  <div>
-                    {msg.role === 'user' ? (
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    ) : (
-                      <div className="text-sm whitespace-pre-wrap">
-                        <MarkdownText content={msg.content} />
-                      </div>
-                    )}
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                      msg.role === 'user'
+                        ? 'bg-[#71B836] text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200'
+                    }`}
+                  >
+                    <div>
+                      {msg.role === 'user' ? (
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <div className="text-sm whitespace-pre-wrap">
+                          <MarkdownText content={msg.content} />
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-xs mt-2 ${
+                      msg.role === 'user' ? 'text-[#71B836]/20' : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {formatTime(msg.timestamp)}
+                    </p>
                   </div>
-                  <p className={`text-xs mt-2 ${
-                    msg.role === 'user' ? 'text-[#71B836]/20' : 'text-gray-500 dark:text-gray-400'
-                  }`}>
-                    {formatTime(msg.timestamp)}
-                  </p>
                 </div>
+                
+                {/* Product Cards - Show detected products from frontend */}
+                {(msg.products && msg.products.length > 0) && (
+                  <div className="w-full">
+                    <ProductCard products={msg.products} isShopifyProducts={false} />
+                  </div>
+                )}
               </div>
-              
-              {/* Product Cards */}
-              {msg.products && msg.products.length > 0 && (
-                <div className="w-full">
-                  <ProductCard products={msg.products} />
-                </div>
-              )}
-              
-              {/* Shopify Product Cards */}
-              {msg.shopifyProducts && msg.shopifyProducts.length > 0 && (
-                <div className="w-full">
-                  <ProductCard products={msg.shopifyProducts} isShopifyProducts={true} />
-                </div>
-              )}
-            </div>
             ))}
           </>
         )}

@@ -51,13 +51,24 @@ export function corsHeaders(origin?: string | null): Record<string, string> {
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
     'http://127.0.0.1:5173',
-    'https://shoppy-s-ai-apc2.vercel.app'
+    'https://shoppy-s-ai-apc2.vercel.app',
+    'https://shoppy-s-ai-backend.vercel.app'
   ];
 
+  // Check if the origin is allowed
   const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+  
+  // Always allow localhost origins
+  const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
+  
+  // Determine the Access-Control-Allow-Origin value
+  let allowOrigin = 'https://shoppy-s-ai-apc2.vercel.app'; // Default
+  if (isLocalhost || isAllowedOrigin) {
+    allowOrigin = origin;
+  }
 
   return {
-    'Access-Control-Allow-Origin': isAllowedOrigin ? origin : 'https://shoppy-s-ai-apc2.vercel.app',
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Allow-Credentials': 'true',

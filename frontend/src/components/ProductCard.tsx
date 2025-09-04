@@ -137,11 +137,47 @@ const ProductCard = ({ products, isShopifyProducts = false }: ProductCardProps) 
     }
   };
 
+  // Cart function for legacy products (detected from frontend)
+  const handleAddToCartLegacy = async (product: ProductInfo) => {
+    try {
+      setAddingToCart(product.id);
+      
+      const cartData = {
+        productId: product.id,
+        productName: product.name,
+        description: product.description || '',
+        price: parseFloat(product.price?.replace(/[^\d.]/g, '') || '0'),
+        quantity: 1,
+        imageUrl: product.image || undefined,
+        productUrl: product.url
+      };
+
+      console.log('Adding legacy product to cart:', cartData);
+
+      // Optimistic update - dispatch event immediately for smooth UX
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+
+      // Add to our internal cart
+      const result = await addToCart(cartData);
+      console.log('Add to cart result:', result);
+      
+      // Dispatch another update to ensure consistency
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
+    } catch (error) {
+      console.error('Error adding legacy product to cart:', error);
+      // Dispatch update to refresh cart state on error
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+    } finally {
+      setAddingToCart(null);
+    }
+  };
+
   // Helper functions for Shopify products
   const formatShopifyPrice = (amount: string, currencyCode: string): string => {
     const price = parseFloat(amount);
     if (currencyCode === 'IDR') {
-      return `Rp ${price.toLocaleString('id-ID')}`;
+      return `$${price.toFixed(2)}`;
     }
     if (currencyCode === 'USD') {
       return `$${price.toFixed(2)}`;
@@ -155,39 +191,59 @@ const ProductCard = ({ products, isShopifyProducts = false }: ProductCardProps) 
 
   return (
     <div className="mt-3">
+      {/* Enhanced header for multiple products */}
       {products.length > 1 && (
+        <div className="bg-gradient-to-r from-[#71B836]/10 to-[#71B836]/5 dark:from-[#71B836]/20 dark:to-[#71B836]/10 border border-[#71B836]/20 dark:border-[#71B836]/30 rounded-lg p-3 mb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Package className="w-5 h-5 text-[#71B836]" />
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                  {products.length} Products Recommended
+                </h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Scroll to see all recommendations from Sensay
+                </p>
+              </div>
+            </div>
+            
+            {/* Navigation buttons */}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={scrollLeft}
+                disabled={!canScrollLeft}
+                className={`p-1.5 rounded-lg transition-all duration-200 ${
+                  canScrollLeft
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#71B836] dark:hover:text-[#71B836] hover:bg-[#71B836]/10 dark:hover:bg-[#71B836]/20'
+                    : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                }`}
+                title="Scroll left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={scrollRight}
+                disabled={!canScrollRight}
+                className={`p-1.5 rounded-lg transition-all duration-200 ${
+                  canScrollRight
+                    ? 'text-gray-600 dark:text-gray-300 hover:text-[#71B836] dark:hover:text-[#71B836] hover:bg-[#71B836]/10 dark:hover:bg-[#71B836]/20'
+                    : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                }`}
+                title="Scroll right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Original header for single product */}
+      {products.length === 1 && (
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
             <Package className="w-4 h-4 text-[#71B836]" />
-            <span className="font-medium">{products.length} products found</span>
-          </div>
-          
-          {/* Navigation buttons */}
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={scrollLeft}
-              disabled={!canScrollLeft}
-              className={`p-1.5 rounded-lg transition-all duration-200 ${
-                canScrollLeft
-                  ? 'text-gray-600 dark:text-gray-300 hover:text-[#71B836] dark:hover:text-[#71B836] hover:bg-[#71B836]/10 dark:hover:bg-[#71B836]/20'
-                  : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-              }`}
-              title="Scroll left"
-            >
-              <ChevronLeft className="w-4 h-4 text-[#71B836]" />
-            </button>
-            <button
-              onClick={scrollRight}
-              disabled={!canScrollRight}
-              className={`p-1.5 rounded-lg transition-all duration-200 ${
-                canScrollRight
-                  ? 'text-gray-600 dark:text-gray-300 hover:text-[#71B836] dark:hover:text-[#71B836] hover:bg-[#71B836]/10 dark:hover:bg-[#71B836]/20'
-                  : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-              }`}
-              title="Scroll right"
-            >
-              <ChevronRight className="w-4 h-4 text-[#71B836]" />
-            </button>
+            <span className="font-medium">1 product recommended by Sensay</span>
           </div>
         </div>
       )}
@@ -361,16 +417,26 @@ const ProductCard = ({ products, isShopifyProducts = false }: ProductCardProps) 
                     )}
                   </div>
 
-                  {/* View Product Button */}
-                  <a
-                    href={legacyProduct.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors group"
-                  >
-                    <span>View Product</span>
-                    <ExternalLink className="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform icon-glow-white" />
-                  </a>
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => handleAddToCartLegacy(legacyProduct)}
+                      className="inline-flex items-center justify-center w-full bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors group"
+                    >
+                      <ShoppingCart className="w-3 h-3 mr-1" />
+                      <span>Add to Cart</span>
+                    </button>
+                    
+                    <a
+                      href={legacyProduct.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-full bg-[#71B836] hover:bg-[#5A9A2E] dark:bg-[#71B836] dark:hover:bg-[#5A9A2E] text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors group"
+                    >
+                      <span>View Details</span>
+                      <ExternalLink className="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                    </a>
+                  </div>
                 </div>
               </div>
             );

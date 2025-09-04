@@ -13,14 +13,20 @@ export function middleware(request: NextRequest) {
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001',
       'http://127.0.0.1:5173',
-      'https://shoppy-s-ai-apc2.vercel.app'
+      'https://shoppy-s-ai-apc2.vercel.app',
+      'https://shoppy-s-ai-backend.vercel.app'
     ];
+
+    // Check if origin is allowed or is localhost
+    const isAllowedOrigin = origin && allowedOrigins.includes(origin);
+    const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
 
     // Handle preflight OPTIONS request
     if (request.method === 'OPTIONS') {
       const response = new NextResponse(null, { status: 200 });
       
-      if (origin && allowedOrigins.includes(origin)) {
+      // Always allow localhost and allowed origins
+      if (isLocalhost || isAllowedOrigin) {
         response.headers.set('Access-Control-Allow-Origin', origin);
       } else {
         response.headers.set('Access-Control-Allow-Origin', 'https://shoppy-s-ai-apc2.vercel.app');
@@ -37,7 +43,8 @@ export function middleware(request: NextRequest) {
     // For actual requests, continue to the route handler
     const response = NextResponse.next();
     
-    if (origin && allowedOrigins.includes(origin)) {
+    // Always allow localhost and allowed origins
+    if (isLocalhost || isAllowedOrigin) {
       response.headers.set('Access-Control-Allow-Origin', origin);
     } else {
       response.headers.set('Access-Control-Allow-Origin', 'https://shoppy-s-ai-apc2.vercel.app');

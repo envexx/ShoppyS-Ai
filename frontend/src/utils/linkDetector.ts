@@ -114,96 +114,9 @@ function generateProductImage(domain: string): string {
 
 /**
  * Extract product info from AI response text patterns
- * ENABLED: Generate Shopify product links when AI mentions product names
+ * DISABLED: Use productDetector.ts instead for natural product detection
  */
 export function extractProductFromMessage(message: string): ProductInfo[] {
-  const products: ProductInfo[] = [];
-  
-  // Look for product mentions with prices (e.g., "Burgundy Statement Tee - $23")
-  const productPricePattern = /([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))\s*-\s*\$(\d+(?:\.\d{2})?)/gi;
-  const priceMatches = message.matchAll(productPricePattern);
-  
-  for (const match of priceMatches) {
-    const productName = match[1].trim();
-    const price = `$${match[2]}`;
-    
-    // Check if this product is already added (avoid duplicates)
-    const isDuplicate = products.some(p => p.name.toLowerCase() === productName.toLowerCase());
-    
-    if (!isDuplicate) {
-      products.push({
-        id: `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        name: productName,
-        price: price,
-        url: `https://shoppysensay.myshopify.com/products/${productName.toLowerCase().replace(/\s+/g, '-')}`,
-        image: 'https://via.placeholder.com/300x200/95BF47/FFFFFF?text=Shopify+Product',
-        availability: 'Available'
-      });
-    }
-  }
-  
-  // Look for product names in bold format (e.g., **Product Name**)
-  const boldProductPattern = /\*\*([^*]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater)[^*]*)\*\*/gi;
-  const boldMatches = message.matchAll(boldProductPattern);
-  
-  for (const match of boldMatches) {
-    const productName = match[1].trim();
-    
-    // Check if this product is already added
-    const isDuplicate = products.some(p => p.name.toLowerCase() === productName.toLowerCase());
-    
-    if (!isDuplicate) {
-      products.push({
-        id: `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        name: productName,
-        url: `https://shoppysensay.myshopify.com/products/${productName.toLowerCase().replace(/\s+/g, '-')}`,
-        image: 'https://via.placeholder.com/300x200/95BF47/FFFFFF?text=Shopify+Product',
-        availability: 'Available'
-      });
-    }
-  }
-  
-  // Look for specific product mentions without prices (e.g., "Burgundy Statement Tee")
-  const specificProductPattern = /(?:the|a|an)\s+([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gi;
-  const specificMatches = message.matchAll(specificProductPattern);
-  
-  for (const match of specificMatches) {
-    const productName = match[1].trim();
-    
-    // Check if this product is already added
-    const isDuplicate = products.some(p => p.name.toLowerCase() === productName.toLowerCase());
-    
-    if (!isDuplicate) {
-      products.push({
-        id: `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        name: productName,
-        url: `https://shoppysensay.myshopify.com/products/${productName.toLowerCase().replace(/\s+/g, '-')}`,
-        image: 'https://via.placeholder.com/300x200/95BF47/FFFFFF?text=Shopify+Product',
-        availability: 'Available'
-      });
-    }
-  }
-  
-  // Look for numbered product mentions (e.g., "1. Burgundy Statement Tee")
-  const numberedProductPattern = /^\d+\.\s+([A-Za-z\s]+(?:Tee|Shirt|Dress|Pants|Jeans|Jacket|Hoodie|Sweater))/gim;
-  const numberedMatches = message.matchAll(numberedProductPattern);
-  
-  for (const match of numberedMatches) {
-    const productName = match[1].trim();
-    
-    // Check if this product is already added
-    const isDuplicate = products.some(p => p.name.toLowerCase() === productName.toLowerCase());
-    
-    if (!isDuplicate) {
-      products.push({
-        id: `product_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        name: productName,
-        url: `https://shoppysensay.myshopify.com/products/${productName.toLowerCase().replace(/\s+/g, '-')}`,
-        image: 'https://via.placeholder.com/300x200/95BF47/FFFFFF?text=Shopify+Product',
-        availability: 'Available'
-      });
-    }
-  }
-  
-  return products;
+  // Disabled - use productDetector.ts for natural product detection
+  return [];
 }

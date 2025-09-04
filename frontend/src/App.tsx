@@ -79,35 +79,43 @@ function App() {
     <Router>
       <div className="min-h-screen">
         <Routes>
-        {/* Landing Page Route */}
-        <Route 
-          path="/" 
-          element={
-            user ? <Navigate to="/chat" replace /> : <LandingPage />
-          } 
-        />
-        
-        {/* Authentication Page Route */}
-        <Route 
-          path="/auth" 
-          element={
-            user ? <Navigate to="/chat" replace /> : <AuthPage onLogin={handleLogin} />
-          } 
-        />
-        
-        {/* Chat Application Route */}
-        <Route 
-          path="/chat" 
-          element={
-            user ? <ChatPage onLogout={handleLogout} /> : <Navigate to="/auth" replace />
-          } 
-        />
-        
-        {/* Fallback route - redirect to home */}
-        <Route 
-          path="*" 
-          element={<Navigate to="/" replace />} 
-        />
+          {/* Redirect root ke new chat */}
+          <Route 
+            path="/" 
+            element={
+              user ? <Navigate to="/chat/new" replace /> : <LandingPage />
+            } 
+          />
+          
+          {/* Authentication Page Route */}
+          <Route 
+            path="/auth" 
+            element={
+              user ? <Navigate to="/chat/new" replace /> : <AuthPage onLogin={handleLogin} />
+            } 
+          />
+          
+          {/* Route untuk new chat */}
+          <Route 
+            path="/chat/new" 
+            element={
+              user ? <ChatPage onLogout={handleLogout} /> : <Navigate to="/auth" replace />
+            } 
+          />
+          
+          {/* Route untuk existing chat dengan sessionId */}
+          <Route 
+            path="/chat/:sessionId" 
+            element={
+              user ? <ChatPage onLogout={handleLogout} /> : <Navigate to="/auth" replace />
+            } 
+          />
+          
+          {/* Fallback route - redirect to home */}
+          <Route 
+            path="*" 
+            element={<Navigate to="/" replace />} 
+          />
         </Routes>
       </div>
     </Router>

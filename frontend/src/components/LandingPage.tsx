@@ -63,7 +63,7 @@ const LandingPage = () => {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <img 
-                src="./ShoppyS logo .png" 
+                src="/ShoppyS logo .png" 
                 alt="ShoppyS Logo" 
                 className="w-10 h-10 rounded-xl shadow-lg"
               />
@@ -166,7 +166,7 @@ const LandingPage = () => {
                     <div className="flex items-start space-x-4">
                       <div className="w-12 h-12 bg-[#71B836] rounded-full flex items-center justify-center shadow-lg p-2">
                         <img 
-                          src="./ShoppyS logo white .png" 
+                          src="/ShoppyS logo white .png" 
                           alt="ShoppyS Logo" 
                           className="w-8 h-8 rounded-full"
                         />
@@ -190,7 +190,7 @@ const LandingPage = () => {
                     <div className="flex items-start space-x-4">
                       <div className="w-12 h-12 bg-[#71B836] rounded-full flex items-center justify-center shadow-lg p-2">
                         <img 
-                          src="./ShoppyS logo white .png" 
+                          src="/ShoppyS logo white .png" 
                           alt="ShoppyS Logo" 
                           className="w-8 h-8 rounded-full"
                         />
@@ -485,7 +485,7 @@ const LandingPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-6 md:mb-0">
               <img 
-                src="./ShoppyS logo .png" 
+                src="/ShoppyS logo .png" 
                 alt="ShoppyS Logo" 
                 className="w-10 h-10 rounded-xl shadow-lg"
               />

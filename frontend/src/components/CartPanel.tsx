@@ -166,10 +166,11 @@ const CartPanel = ({ onCheckoutSuccess }: CartPanelProps) => {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('id-ID', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(price);
   };
 
@@ -293,7 +294,7 @@ const CartPanel = ({ onCheckoutSuccess }: CartPanelProps) => {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="flex items-center space-x-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
             <img 
-              src="./ShoppyS logo .png" 
+              src="/ShoppyS logo .png" 
               alt="ShoppyS Logo" 
               className="w-10 h-10 rounded-lg shadow-lg"
             />

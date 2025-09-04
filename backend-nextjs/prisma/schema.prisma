@@ -31,8 +31,11 @@ model User {
 
 model ChatSession {
   id          String      @id @default(cuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?     // Optional untuk anonymous users
+  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String      @default("New Chat")
+  isActive    Boolean     @default(true)
   
   // Sensay conversation tracking
   conversationId String?  @unique // Sensay conversation UUID
@@ -51,10 +54,13 @@ model ChatMessage {
   sessionId     String
   session       ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   
-  role          String      // 'user' atau 'assistant'
+  role          String      // 'user', 'assistant', atau 'system'
   content       String      @db.Text
   link          String?     // Link yang terdeteksi dalam pesan
   timestamp     DateTime    @default(now())
+  
+  // Metadata untuk menyimpan data tambahan
+  metadata      Json?       // Store additional data
   
   // Sensay response metadata
   sensayResponse Json?     // Store full Sensay response if needed

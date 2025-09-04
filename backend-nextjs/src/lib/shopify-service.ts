@@ -666,7 +666,7 @@ export class ShopifyService {
     const price = parseFloat(amount);
     
     if (currencyCode === 'IDR') {
-      return `Rp ${price.toLocaleString('id-ID')}`;
+      return `$${price.toFixed(2)}`;
     }
     
     if (currencyCode === 'USD') {
@@ -681,10 +681,10 @@ export class ShopifyService {
    */
   formatProductsForChat(products: ShopifyProduct[]): string {
     if (products.length === 0) {
-      return "Maaf, saya tidak menemukan produk yang sesuai dengan pencarian Anda. Coba dengan kata kunci yang berbeda.";
+      return "Sorry, I couldn't find products that match your search. Try with different keywords.";
     }
 
-    let response = `Saya menemukan ${products.length} produk yang cocok:\n\n`;
+    let response = `I found ${products.length} products that match:\n\n`;
     
     products.forEach((product, index) => {
       const price = this.formatPrice(
@@ -693,13 +693,13 @@ export class ShopifyService {
       );
       
       const image = product.images.edges.length > 0 ? product.images.edges[0].node.url : '';
-      const availability = product.totalInventory > 0 ? 'Tersedia' : 'Stok Habis';
+      const availability = product.totalInventory > 0 ? 'Available' : 'Out of Stock';
       
       response += `${index + 1}. **${product.title}**\n`;
-      response += `   Harga: ${price}\n`;
+      response += `   Price: ${price}\n`;
       response += `   Status: ${availability}\n`;
       if (product.description) {
-        response += `   Deskripsi: ${product.description.substring(0, 100)}...\n`;
+        response += `   Description: ${product.description.substring(0, 100)}...\n`;
       }
       if (image) {
         response += `   ![${product.title}](${image})\n`;
@@ -707,9 +707,27 @@ export class ShopifyService {
       response += `   Link: https://shoppysensay.myshopify.com/products/${product.handle}\n\n`;
     });
 
-    response += "Apakah ada produk yang ingin Anda tambahkan ke keranjang? Atau ingin melihat detail lebih lanjut?";
+    response += "Would you like to add any of these products to your cart? Or would you like to see more details?";
     
     return response;
+  }
+}
+
+/**
+ * Standalone function to search products in Shopify
+ * This function can be used directly without instantiating the ShopifyService class
+ */
+export async function searchProductsInShopify(query: string): Promise<any[]> {
+  try {
+    const shopifyService = new ShopifyService();
+    const products = await shopifyService.searchProducts(query, 5);
+    
+    console.log(`🔍 Shopify search for "${query}" returned ${products.length} products`);
+    
+    return products;
+  } catch (error) {
+    console.error('Error searching products in Shopify:', error);
+    return [];
   }
 }
 
