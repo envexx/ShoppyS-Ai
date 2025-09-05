@@ -16,8 +16,8 @@
   
   <p>
     <strong>Live Demo:</strong> 
-    <a href="https://sensay-terbaru.vercel.app">Frontend</a> | 
-    <a href="https://sensay-terbaru.vercel.app/api/health">Backend API</a>
+    <a href="https://shoppy-s-ai-apc2.vercel.app/">Frontend</a> | 
+    <a href="https://shoppy-s-ai-apc2.vercel.app/">Backend API</a>
   </p>
 </div>
 
@@ -596,8 +596,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
     <em>Revolutionizing e-commerce through natural AI conversations with embedded product knowledge</em>
   </p>
   <p>
-    <a href="https://sensay-terbaru.vercel.app">Live Demo</a> •
-    <a href="https://github.com/e/sensay-shop/issues">Report Bug</a> •
-    <a href="https://github.com/your-username/sensay-shop/discussions">Request Feature</a>
+    <a href="https://shoppy-s-ai-apc2.vercel.app/">Live Demo</a> •
+    <a href="https://github.com/e/ShoppyS-Ai/issues">Report Bug</a> •
+    <a href="https://github.com/envexx/ShoppyS-Ai/discussions">Request Feature</a>
   </p>
 </div>
