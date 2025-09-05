@@ -150,11 +150,17 @@ export class SessionManager {
    */
   static async getSessions(userId?: string, limit: number = 50): Promise<ChatSessionData[]> {
     try {
+      console.log('🔍 SessionManager.getSessions called with:', { userId, limit });
+      
+      const whereClause = {
+        isActive: true,
+        ...(userId && { userId }),
+      };
+      
+      console.log('🔍 Query where clause:', whereClause);
+      
       const sessions = await prisma.chatSession.findMany({
-        where: {
-          isActive: true,
-          ...(userId && { userId }),
-        },
+        where: whereClause,
         orderBy: { updatedAt: 'desc' },
         take: limit,
         include: {
@@ -164,13 +170,21 @@ export class SessionManager {
         },
       });
 
-      return sessions.map((session: any) => ({
+      console.log('🔍 Raw sessions from database:', sessions.length, 'sessions found');
+      console.log('🔍 Raw sessions details:', sessions);
+
+      const mappedSessions = sessions.map((session: any) => ({
         id: session.id,
         title: session.title,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
         messageCount: session._count.messages,
       }));
+      
+      console.log('🔍 Mapped sessions:', mappedSessions.length, 'sessions');
+      console.log('🔍 Mapped sessions details:', mappedSessions);
+      
+      return mappedSessions;
     } catch (error) {
       console.error('Error getting sessions:', error);
       throw new Error('Failed to get chat sessions');

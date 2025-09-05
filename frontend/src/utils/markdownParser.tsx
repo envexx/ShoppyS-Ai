@@ -11,6 +11,41 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
     return [text || ''];
   }
 
+  // Pre-process text to clean up formatting issues
+  let processedText = text;
+  
+  // Remove URLs and links (keep only text)
+  processedText = processedText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  processedText = processedText.replace(/https?:\/\/[^\s\)]+/g, '');
+  processedText = processedText.replace(/\(\s*\)/g, '');
+  processedText = processedText.replace(/\[\s*\]/g, '');
+  
+  // Fix broken bold formatting
+  const boldMatches: string[] = [];
+  processedText = processedText.replace(/\*\*([^*]+?)\*\*/g, (match) => {
+    boldMatches.push(match);
+    return `__BOLD_${boldMatches.length - 1}__`;
+  });
+  
+  // Handle broken bold formatting patterns
+  processedText = processedText.replace(/\*\*([^*]+?)(\s+-\s+[^*]+?)(\d+\.\s)/g, '**$1**$2\n\n$3');
+  processedText = processedText.replace(/\*\*([^*]+?)(\s+-\s+[^*]+?)(\.\s+[A-Z])/g, '**$1**$2$3');
+  
+  // Restore protected bold text
+  boldMatches.forEach((match, index) => {
+    processedText = processedText.replace(`__BOLD_${index}__`, match);
+  });
+  
+  // Add line breaks for better readability
+  processedText = processedText.replace(/([^0-9])\s*(\d+\.\s)/g, '$1\n\n$2');
+  processedText = processedText.replace(/^(\d+\.\s)/gm, '\n\n$1');
+  processedText = processedText.replace(/(\d+\.\s+[^0-9]+?)(\d+\.\s+)/g, '$1\n\n$2');
+  
+  // Clean up whitespace
+  processedText = processedText.replace(/[ \t]+/g, ' ');
+  processedText = processedText.replace(/\n{3,}/g, '\n\n');
+  processedText = processedText.trim();
+
   const result: (string | JSX.Element)[] = [];
   let keyCounter = 0;
 
@@ -18,9 +53,9 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
   let i = 0;
   let currentText = '';
 
-  while (i < text.length) {
+  while (i < processedText.length) {
     // Check for [Product Name](URL) links
-    if (text[i] === '[') {
+    if (processedText[i] === '[') {
       // Add any accumulated text
       if (currentText) {
         result.push(currentText);
@@ -28,13 +63,13 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
       }
       
       // Find the closing ] and opening (
-      const endBracket = text.indexOf(']', i + 1);
-      const startParen = text.indexOf('(', endBracket);
-      const endParen = text.indexOf(')', startParen);
+      const endBracket = processedText.indexOf(']', i + 1);
+      const startParen = processedText.indexOf('(', endBracket);
+      const endParen = processedText.indexOf(')', startParen);
       
       if (endBracket !== -1 && startParen !== -1 && endParen !== -1) {
-        const linkText = text.substring(i + 1, endBracket);
-        const linkUrl = text.substring(startParen + 1, endParen);
+        const linkText = processedText.substring(i + 1, endBracket);
+        const linkUrl = processedText.substring(startParen + 1, endParen);
         
         // Fix broken product links (remove double links)
         const cleanLinkText = linkText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
@@ -74,7 +109,7 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
     }
     
     // Check for **bold** text
-    if (text.substr(i, 2) === '**') {
+    if (processedText.substr(i, 2) === '**') {
       // Add any accumulated text
       if (currentText) {
         result.push(currentText);
@@ -82,9 +117,9 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
       }
       
       // Find the closing **
-      const endIndex = text.indexOf('**', i + 2);
+      const endIndex = processedText.indexOf('**', i + 2);
       if (endIndex !== -1) {
-        const content = text.substring(i + 2, endIndex);
+        const content = processedText.substring(i + 2, endIndex);
         result.push(
           <strong key={`bold-${keyCounter++}`} className="font-bold text-gray-900 dark:text-white">
             {content}
@@ -96,7 +131,7 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
     }
     
     // Check for __bold__ text
-    if (text.substr(i, 2) === '__') {
+    if (processedText.substr(i, 2) === '__') {
       // Add any accumulated text
       if (currentText) {
         result.push(currentText);
@@ -104,9 +139,9 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
       }
       
       // Find the closing __
-      const endIndex = text.indexOf('__', i + 2);
+      const endIndex = processedText.indexOf('__', i + 2);
       if (endIndex !== -1) {
-        const content = text.substring(i + 2, endIndex);
+        const content = processedText.substring(i + 2, endIndex);
         result.push(
           <strong key={`bold-${keyCounter++}`} className="font-bold text-gray-900 dark:text-white">
             {content}
@@ -118,7 +153,7 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
     }
     
     // Check for *italic* text (but not **)
-    if (text[i] === '*' && text[i + 1] !== '*') {
+    if (processedText[i] === '*' && processedText[i + 1] !== '*') {
       // Add any accumulated text
       if (currentText) {
         result.push(currentText);
@@ -126,9 +161,9 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
       }
       
       // Find the closing *
-      const endIndex = text.indexOf('*', i + 1);
-      if (endIndex !== -1 && text[endIndex + 1] !== '*') {
-        const content = text.substring(i + 1, endIndex);
+      const endIndex = processedText.indexOf('*', i + 1);
+      if (endIndex !== -1 && processedText[endIndex + 1] !== '*') {
+        const content = processedText.substring(i + 1, endIndex);
         result.push(
           <em key={`italic-${keyCounter++}`} className="italic text-gray-800 dark:text-gray-200">
             {content}
@@ -140,7 +175,7 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
     }
     
     // Check for `code` text
-    if (text[i] === '`') {
+    if (processedText[i] === '`') {
       // Add any accumulated text
       if (currentText) {
         result.push(currentText);
@@ -148,9 +183,9 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
       }
       
       // Find the closing `
-      const endIndex = text.indexOf('`', i + 1);
+      const endIndex = processedText.indexOf('`', i + 1);
       if (endIndex !== -1) {
-        const content = text.substring(i + 1, endIndex);
+        const content = processedText.substring(i + 1, endIndex);
         result.push(
           <code key={`code-${keyCounter++}`} className="bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400 px-1 py-0.5 rounded text-sm font-mono">
             {content}
@@ -162,7 +197,7 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
     }
     
     // Regular character
-    currentText += text[i];
+    currentText += processedText[i];
     i++;
   }
   
@@ -171,7 +206,7 @@ export const parseMarkdown = (text: string): (string | JSX.Element)[] => {
     result.push(currentText);
   }
 
-  return result.length > 0 ? result : [text];
+  return result.length > 0 ? result : [processedText];
 };
 
 export const MarkdownText: React.FC<MarkdownParserProps> = ({ content, className = "" }) => {

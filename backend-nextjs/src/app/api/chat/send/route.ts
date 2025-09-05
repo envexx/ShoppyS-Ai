@@ -43,7 +43,7 @@ async function handler(request: NextRequest) {
     // 3. sessionId is 'new-chat' or similar
     if (!chatSessionId || isNewChat || chatSessionId === 'new-chat') {
       console.log(`🆕 Creating new chat session for user ${user.id}`);
-      chatSessionId = await sensayService.getOrCreateChatSession(user.id);
+      chatSessionId = await sensayService.getOrCreateChatSession(user.id, true); // Force new session
       isNewSession = true;
       console.log(`✅ Created new chat session ${chatSessionId} for user ${user.id}`);
     } else {

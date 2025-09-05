@@ -97,80 +97,7 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  /**
-   * Improved AI response formatter for better display in chat UI
-   * This function cleans up the text while preserving structure and readability
-   */
-  function formatAIResponseForDisplay(responseText: string): string {
-    if (!responseText || typeof responseText !== 'string') {
-      return '';
-    }
 
-    let formattedText = responseText;
-    
-    // Remove URLs dan links
-    formattedText = formattedText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-    formattedText = formattedText.replace(/https?:\/\/[^\s\)]+/g, '');
-    formattedText = formattedText.replace(/\(\s*\)/g, '');
-    formattedText = formattedText.replace(/\[\s*\]/g, '');
-    
-    // FIXED: Better markdown bold formatting preservation
-    // First, protect existing properly formatted bold text
-    const boldMatches: string[] = [];
-    formattedText = formattedText.replace(/\*\*([^*]+?)\*\*/g, (match, content) => {
-      boldMatches.push(match);
-      return `__BOLD_${boldMatches.length - 1}__`;
-    });
-    
-    // Now handle any broken bold formatting more carefully
-    // Only fix cases where bold text is followed by specific patterns
-    formattedText = formattedText.replace(/\*\*([^*]+?)(\s+-\s+[^*]+?)(\d+\.\s)/g, '**$1**$2\n\n$3');
-    formattedText = formattedText.replace(/\*\*([^*]+?)(\s+-\s+[^*]+?)(\.\s+[A-Z])/g, '**$1**$2$3');
-    
-    // Restore protected bold text
-    boldMatches.forEach((match, index) => {
-      formattedText = formattedText.replace(`__BOLD_${index}__`, match);
-    });
-    
-    // Add line breaks before numbered lists (but not inside bold text)
-    formattedText = formattedText.replace(/([^0-9])\s*(\d+\.\s)/g, '$1\n\n$2');
-    
-    // Also fix cases where numbered lists start without proper spacing
-    formattedText = formattedText.replace(/^(\d+\.\s)/gm, '\n\n$1');
-    
-    // Clean numbered lists
-    formattedText = formattedText.replace(/(\d+\.\s+[^0-9]+?)(\d+\.\s+)/g, '$1\n\n$2');
-    
-    // Clean whitespace
-    formattedText = formattedText.replace(/[ \t]+/g, ' ');
-    formattedText = formattedText.replace(/\n{3,}/g, '\n\n');
-    formattedText = formattedText.trim();
-    
-    return formattedText;
-  }
-
-  /**
-   * Alternative simpler formatter that preserves original structure better
-   */
-  function simpleFormatAIResponse(responseText: string): string {
-    if (!responseText || typeof responseText !== 'string') {
-      return '';
-    }
-
-    let formattedText = responseText;
-    
-    // Only remove URLs and links, keep everything else as is
-    formattedText = formattedText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-    formattedText = formattedText.replace(/https?:\/\/[^\s\)]+/g, '');
-    formattedText = formattedText.replace(/\(\s*\)/g, '');
-    formattedText = formattedText.replace(/\[\s*\]/g, '');
-    
-    // Just clean up excessive whitespace
-    formattedText = formattedText.replace(/[ \t]+/g, ' ');
-    formattedText = formattedText.trim();
-    
-    return formattedText;
-  }
 
   // Load cart count on component mount
   useEffect(() => {
@@ -372,8 +299,20 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
     try {
       // Determine if this is a new chat or continuing existing session
       const isNewChatMode = isNewChat || selectedChat === 'new-chat';
-      // Use the tracked currentSessionId or fall back to selectedChat logic
-      const sessionIdToSend = currentSessionId || (selectedChat !== 'new-chat' && !isNewChatMode ? selectedChat : undefined);
+      
+      // For new chat mode, don't send any sessionId
+      // For existing session, use the sessionId from URL or currentSessionId
+      let sessionIdToSend: string | undefined;
+      
+      if (isNewChatMode) {
+        // New chat - don't send sessionId, let backend create new one
+        sessionIdToSend = undefined;
+        console.log('🆕 New chat mode - no sessionId will be sent');
+      } else {
+        // Existing session - use sessionId from URL or currentSessionId
+        sessionIdToSend = selectedChat !== 'new-chat' ? selectedChat : (currentSessionId || undefined);
+        console.log('📝 Existing session mode - using sessionId:', sessionIdToSend);
+      }
       
       console.log('📨 Sending message with params:', { 
         message: userMessage.content, 
@@ -419,8 +358,8 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
           detectedProducts = detectProductsInText(aiContent);
         }
         
-        // Format the AI response for better readability
-        let processedText = formatAIResponseForDisplay(aiContent);
+        // Use AI content directly - formatting will be handled by markdownParser
+        let processedText = aiContent;
         
         // Create interactive text with clickable links (but keep it clean without markdown)
         for (const product of detectedProducts) {
@@ -465,24 +404,27 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
             products: aiMessage.products
           });
           
-          console.log(`💾 Saved messages to localStorage for session ${sessionId}`);
+          console.log(`💾 Saved messages to localStorage for session ${response.data.sessionId}`);
         }
         
         // Update currentSessionId with the session ID from response
         if (response.data.sessionId) {
           setCurrentSessionId(response.data.sessionId);
           
-          // If this was a new session or session ID changed, notify parent to switch to it
-          if ((isNewChatMode || !sessionIdToSend || sessionIdToSend !== response.data.sessionId) && onSessionCreated) {
-            console.log('Session ID changed from', sessionIdToSend, 'to', response.data.sessionId);
+          // If this was a new session, notify parent to switch to it
+          if (isNewChatMode && onSessionCreated) {
+            console.log('🆕 New session created, notifying parent:', response.data.sessionId);
+            onSessionCreated(response.data.sessionId);
+          } else if (response.data.isNewSession && onSessionCreated) {
+            console.log('🆕 Backend created new session, notifying parent:', response.data.sessionId);
             onSessionCreated(response.data.sessionId);
           }
         }
         
         // Update chat sessions in localStorage
         chatStorage.saveSession({
-          id: sessionId,
-          title: userMessage.content.substring(0, 30) + (userMessage.content.length > 30 ? '...' : ''),
+          id: response.data.sessionId,
+          title: generateSessionTitle(userMessage.content),
           lastMessage: aiMessage.content.substring(0, 50) + (aiMessage.content.length > 50 ? '...' : ''),
           timestamp: new Date().getTime(),
           messageCount: 2, // User message + AI response
@@ -523,6 +465,30 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const generateSessionTitle = (userMessage: string): string => {
+    // Clean the message
+    let title = userMessage.trim();
+    
+    // Remove common prefixes
+    title = title.replace(/^(find|search|show|get|give|tell|help|what|how|where|when|why|can|could|would|should|do|does|did|is|are|was|were)\s+/i, '');
+    
+    // Take first 4-6 words
+    const words = title.split(' ').slice(0, 6);
+    title = words.join(' ');
+    
+    // Limit length
+    if (title.length > 40) {
+      title = title.substring(0, 40) + '...';
+    }
+    
+    // If empty or too short, use session ID
+    if (title.length < 3) {
+      return 'Chat Session';
+    }
+    
+    return title;
   };
 
   if (!user) {
@@ -655,7 +621,7 @@ const ChatArea = ({ selectedChat, user, isNewChat = false, onSessionCreated, onC
                       )}
                     </div>
                     <p className={`text-xs mt-2 ${
-                      msg.role === 'user' ? 'text-[#71B836]/20' : 'text-gray-500 dark:text-gray-400'
+                      msg.role === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {formatTime(msg.timestamp)}
                     </p>

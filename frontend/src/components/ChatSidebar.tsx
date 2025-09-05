@@ -84,9 +84,8 @@ const ChatSidebar = ({ selectedChat, onChatSelect, user, onLogout, refreshTrigge
     if (refreshTrigger && user) {
       console.log('🔄 Refreshing sessions due to trigger:', refreshTrigger, 'for user:', user.id);
       setSessionsLoaded(false); // Reset flag to allow reload
-      setTimeout(() => {
-        loadChatSessions();
-      }, 500); // Small delay to ensure backend has processed the new session
+      // Immediate refresh without delay
+      loadChatSessions();
     }
   }, [refreshTrigger, user]);
 

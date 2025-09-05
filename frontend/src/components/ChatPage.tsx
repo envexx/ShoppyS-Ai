@@ -77,15 +77,21 @@ const ChatPage = ({ onLogout }: ChatPageProps) => {
   };
 
   const handleNewChatCreated = (sessionId: string) => {
-    console.log('New chat session created, switching to:', sessionId);
+    console.log('🆕 New chat session created, switching to:', sessionId);
+    
+    // Update selected chat to the new session
     setSelectedChat(sessionId);
+    
+    // Trigger sidebar refresh to show the new session
     setRefreshTrigger(prev => prev + 1);
     
-    // Update URL tanpa reload menggunakan replaceState (seperti contoh Anda)
+    // Update URL to the new session
     window.history.replaceState(null, '', `/chat/${sessionId}`);
     
     // Update browser title
     SimpleURLManager.updateTitle(sessionId);
+    
+    console.log('✅ Switched to new session:', sessionId);
   };
 
   const handleCartClick = () => {

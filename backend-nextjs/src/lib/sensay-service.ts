@@ -224,10 +224,28 @@ export class SensayService {
   /**
    * Get or create chat session
    */
-  async getOrCreateChatSession(userId: string): Promise<string> {
+  async getOrCreateChatSession(userId: string, forceNew: boolean = false): Promise<string> {
     try {
+      console.log('🔍 SensayService.getOrCreateChatSession called for user:', userId, 'forceNew:', forceNew);
+      
+      if (forceNew) {
+        console.log('🔍 Force creating new session for user:', userId);
+        // Always create new session when forceNew is true
+        const session = await prisma.chatSession.create({
+          data: { 
+            userId,
+            title: 'New Chat', // Will be updated after first message
+            isActive: true
+          }
+        });
+        console.log(`✅ Created new chat session ${session.id} for user ${userId}`);
+        return session.id;
+      }
+      
       // Check for existing active session (within last 30 minutes)
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+      
+      console.log('🔍 Looking for existing sessions after:', thirtyMinutesAgo);
       
       let session = await prisma.chatSession.findFirst({
         where: { 
@@ -240,9 +258,14 @@ export class SensayService {
       });
 
       if (!session) {
+        console.log('🔍 No existing session found, creating new one for user:', userId);
         // Create new session
         session = await prisma.chatSession.create({
-          data: { userId }
+          data: { 
+            userId,
+            title: 'New Chat', // Will be updated after first message
+            isActive: true
+          }
         });
         console.log(`✅ Created new chat session ${session.id} for user ${userId}`);
       } else {
@@ -1134,6 +1157,8 @@ export class SensayService {
     shopifyProducts: any[]
   ): Promise<void> {
     try {
+      console.log('🔍 SensayService.saveChatMessage called:', { userId, sessionId, userMessage: userMessage.substring(0, 50) });
+      
       // Validate session ownership before saving
       const isValidSession = await this.validateSessionOwnership(sessionId, userId);
       if (!isValidSession) {
@@ -1141,8 +1166,10 @@ export class SensayService {
         throw new Error('Invalid session access for message saving');
       }
 
+      console.log('✅ Session ownership validated, saving messages...');
+
       // Save user message
-      await prisma.chatMessage.create({
+      const userMsg = await prisma.chatMessage.create({
         data: {
           sessionId,
           role: 'user',
@@ -1150,9 +1177,10 @@ export class SensayService {
           timestamp: new Date()
         }
       });
+      console.log('✅ User message saved:', userMsg.id);
 
       // Save assistant response
-      await prisma.chatMessage.create({
+      const assistantMsg = await prisma.chatMessage.create({
         data: {
           sessionId,
           role: 'assistant',
@@ -1162,12 +1190,24 @@ export class SensayService {
           shopifyProducts: shopifyProducts.length > 0 ? shopifyProducts : undefined
         }
       });
+      console.log('✅ Assistant message saved:', assistantMsg.id);
 
       // Update session timestamp
-      await prisma.chatSession.update({
+      const updatedSession = await prisma.chatSession.update({
         where: { id: sessionId },
         data: { updatedAt: new Date() }
       });
+      console.log('✅ Session timestamp updated:', updatedSession.id);
+
+      // Update session title if it's still "New Chat" and this is a user message
+      if (userMessage && updatedSession.title === 'New Chat') {
+        const title = this.generateSessionTitle(userMessage);
+        await prisma.chatSession.update({
+          where: { id: sessionId },
+          data: { title: title }
+        });
+        console.log('✅ Session title updated to:', title);
+      }
 
       console.log(`✅ Saved chat message to session ${sessionId} for user ${userId}`);
     } catch (error) {
@@ -1565,6 +1605,33 @@ export class SensayService {
     console.log('✅ Response cleaned:', cleanedResponse);
     
     return cleanedResponse;
+  }
+
+  /**
+   * Generate session title from user message
+   */
+  private generateSessionTitle(userMessage: string): string {
+    // Clean the message
+    let title = userMessage.trim();
+    
+    // Remove common prefixes
+    title = title.replace(/^(find|search|show|get|give|tell|help|what|how|where|when|why|can|could|would|should|do|does|did|is|are|was|were)\s+/i, '');
+    
+    // Take first 4-6 words
+    const words = title.split(' ').slice(0, 6);
+    title = words.join(' ');
+    
+    // Limit length
+    if (title.length > 40) {
+      title = title.substring(0, 40) + '...';
+    }
+    
+    // If empty or too short, use session ID
+    if (title.length < 3) {
+      return 'Chat Session';
+    }
+    
+    return title;
   }
 }
 

@@ -172,11 +172,19 @@ export function withMiddleware(
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
     const origin = request.headers.get('origin');
     
+    console.log('🔧 Middleware: Processing request', { 
+      method: request.method, 
+      url: request.url, 
+      origin,
+      pathname: new URL(request.url).pathname 
+    });
+    
     // Log request
     logRequest(request);
 
     // Handle preflight OPTIONS requests
     if (request.method === 'OPTIONS') {
+      console.log('🔧 Middleware: Handling OPTIONS request');
       return handleOptions(request);
     }
 
@@ -184,15 +192,18 @@ export function withMiddleware(
     if (options.rateLimit) {
       const limiter = rateLimit(options.rateLimit.windowMs, options.rateLimit.max);
       if (!limiter(request)) {
+        console.log('🔧 Middleware: Rate limit exceeded');
         return errorResponse('Too many requests, please try again later.', 429, origin);
       }
     }
 
     try {
+      console.log('🔧 Middleware: Calling handler for', request.url);
       const response = await handler(request, context);
+      console.log('🔧 Middleware: Handler completed, adding headers');
       return addStandardHeaders(response, origin);
     } catch (error: any) {
-      console.error('API Error:', error);
+      console.error('🔧 Middleware: API Error:', error);
       return errorResponse(
         process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
         500,
