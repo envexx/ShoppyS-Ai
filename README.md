@@ -37,7 +37,7 @@
 
 ## 🎯 Overview
 
-<img src="path/to/Screenshot 2025-09-05 031344.png" alt="Alt text" width="300" height="200">
+<img src="./screenshot/Screenshot 2025-09-05 031344.png" alt="Alt text" width="300" height="200">
 
 Shoppy Sensay is an intelligent AI-powered shopping assistant that revolutionizes the e-commerce experience by providing personalized product recommendations and seamless shopping interactions. Built with cutting-edge technology including React, Node.js, and powered by Sensay AI with integrated knowledge database replica, it creates natural, human-like conversations that significantly improve conversion rates through contextual understanding of your entire Shopify store catalog.
 
