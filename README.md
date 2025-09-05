@@ -16,8 +16,8 @@
   
   <p>
     <strong>Live Demo:</strong> 
-    <a href="https://sensay-terbaru.vercel.app">Frontend</a> | 
-    <a href="https://sensay-terbaru.vercel.app/api/health">Backend API</a>
+    <a href="https://shoppy-s-ai-apc2.vercel.app/">Frontend</a> | 
+    <a href="https://shoppy-s-ai-apc2.vercel.app/">Backend API</a>
   </p>
 </div>
 
@@ -37,58 +37,62 @@
 
 ## 🎯 Overview
 
-Shoppy Sensay is an intelligent AI-powered shopping assistant that revolutionizes the e-commerce experience by providing personalized product recommendations and seamless shopping interactions. Built with cutting-edge technology including React, Node.js, and powered by Sensay AI, it helps customers find the perfect products from your Shopify store through natural conversation.
+Shoppy Sensay is an intelligent AI-powered shopping assistant that revolutionizes the e-commerce experience by providing personalized product recommendations and seamless shopping interactions. Built with cutting-edge technology including React, Node.js, and powered by Sensay AI with integrated knowledge database replica, it creates natural, human-like conversations that significantly improve conversion rates through contextual understanding of your entire Shopify store catalog.
 
 ### Key Highlights
 
-- 🤖 **AI-Powered**: Advanced natural language processing for intelligent product recommendations
-- 🛒 **Smart Cart Management**: Intelligent cart intent detection and automatic product addition
-- 💬 **Conversational Interface**: Natural chat-based shopping experience
+- 🤖 **AI-Powered with Knowledge Database**: Advanced natural language processing with Shopify data integrated directly into Sensay's knowledge base for contextual understanding
+- 🧠 **Smart Knowledge Replica**: Complete product catalog, descriptions, and store information embedded in AI's knowledge for instant, natural responses
+- 💬 **Natural Conversations**: Human-like interactions that understand context, nuance, and customer intent to drive higher conversion rates
+- 🛒 **Intelligent Cart Management**: Context-aware cart recommendations based on conversation flow and customer preferences
+- 🎯 **Conversion Optimized**: AI trained on your specific product data to provide targeted recommendations that increase sales
 - 🎨 **Modern UI**: Beautiful, responsive design with dark mode support
 - 🔒 **Secure**: JWT-based authentication and secure API endpoints
 - 📱 **Mobile-First**: Optimized for all devices
-- ⚡ **Performance Optimized**: Fast response times and efficient caching
+- ⚡ **Performance Optimized**: Fast response times with embedded knowledge for instant product recall
 
 ## 🏗️ Architecture
 
-### System Architecture Overview
+### Enhanced System Architecture
 
 ```mermaid
 graph TB
     A[Frontend - React App] --> B[Backend API - Next.js]
-    B --> C[Sensay AI Service]
+    B --> C[Sensay AI Service with Knowledge Base]
     B --> D[Shopify API]
     B --> E[PostgreSQL Database]
     
-    C --> F[AI Chat Processing]
-    D --> G[Product Search & Inventory]
-    E --> H[User Data & Cart Management]
+    C --> F[AI Chat Processing + Product Knowledge]
+    C --> G[Embedded Shopify Catalog]
+    C --> H[Natural Language Understanding]
+    D --> I[Real-time Inventory Sync]
+    E --> J[User Data & Cart Management]
     
-    subgraph "Frontend Components"
-        I[Chat Interface]
-        J[Product Display]
-        K[Shopping Cart]
-        L[Authentication]
+    subgraph "Sensay Knowledge Database"
+        K[Product Catalog Knowledge]
+        L[Store Information]
+        M[Product Descriptions & Features]
+        N[Pricing & Inventory Context]
+        O[Brand & Category Knowledge]
     end
     
-    subgraph "Backend Services"
-        M[Auth Service]
-        N[Cart Service]
-        O[Sensay Service]
-        P[Shopify Service]
-        Q[Cache Service]
+    subgraph "AI Enhancement Layer"
+        P[Contextual Understanding]
+        Q[Natural Response Generation]
+        R[Conversion Optimization]
+        S[Personalized Recommendations]
     end
     
-    A --> I
-    A --> J
-    A --> K
-    A --> L
+    C --> K
+    C --> L
+    C --> M
+    C --> N
+    C --> O
     
-    B --> M
-    B --> N
-    B --> O
-    B --> P
-    B --> Q
+    C --> P
+    C --> Q
+    C --> R
+    C --> S
 ```
 
 ### Technology Stack
@@ -108,99 +112,99 @@ graph TB
 - **JWT** - Authentication
 - **Redis** - Caching layer
 
-#### External Services
-- **Sensay AI** - AI conversation engine
-- **Shopify API** - E-commerce platform integration
+#### AI & Knowledge Integration
+- **Sensay AI with Knowledge Database** - AI conversation engine with embedded Shopify catalog knowledge
+- **Natural Language Processing** - Advanced understanding of customer intent and context
+- **Knowledge Replica** - Complete store information integrated into AI's knowledge base
+- **Shopify API** - Real-time inventory and order management
 
-### Data Flow
+### Enhanced Data Flow
 
-1. **User Interaction**: Customer interacts with the chat interface
-2. **AI Processing**: Sensay AI processes the natural language input
-3. **Intent Detection**: System detects cart intent and product recommendations
-4. **Product Search**: System searches Shopify store for relevant products
-5. **Response Generation**: AI generates contextual response with product recommendations
-6. **UI Update**: Frontend displays products and chat response
-7. **Cart Management**: User can add products to cart and manage purchases
+1. **Knowledge Integration**: Complete Shopify catalog is embedded into Sensay's knowledge database replica
+2. **Natural Understanding**: Customer interacts using natural language, AI understands context from embedded knowledge
+3. **Contextual Processing**: Sensay AI processes queries using both conversation context and embedded product knowledge
+4. **Intelligent Response**: AI generates natural, human-like responses with specific product recommendations
+5. **Conversion Optimization**: Responses are crafted to guide customers toward purchase decisions
+6. **Real-time Sync**: Live inventory updates ensure accuracy while maintaining natural conversation flow
+7. **Enhanced Cart Experience**: AI suggests complementary products and handles cart management seamlessly
 
 ## ✨ Features
 
-### 🤖 Enhanced AI-Powered Chat
-- **Natural Language Understanding**: Interprets customer requests from vague to specific
-- **Contextual Responses**: Maintains conversation context for better recommendations
-- **Smart Product Search**: Automatically searches inventory based on customer needs
-- **Learning Capabilities**: Improves recommendations based on user interactions
-- **Cart Intent Detection**: Automatically detects when users want to add items to cart
-- **General Information Filtering**: Distinguishes between product recommendations and general information
+### 🧠 Revolutionary Knowledge-Powered AI Chat
+- **Embedded Product Knowledge**: Complete Shopify catalog integrated directly into AI's knowledge base for instant, accurate responses
+- **Natural Language Mastery**: Understands nuanced customer queries and responds like a knowledgeable human sales associate
+- **Contextual Conversation Flow**: Maintains deep understanding of conversation history and customer preferences
+- **Smart Product Recall**: Instantly recalls any product details, specifications, or recommendations without API delays
+- **Conversion-Focused Responses**: AI trained to guide conversations toward purchase decisions naturally
+- **Personalized Shopping Journey**: Adapts conversation style and recommendations based on customer behavior and preferences
 
-### 🛒 Intelligent E-commerce Integration
-- **Real-time Product Search**: Live inventory from Shopify stores
-- **Product Display**: Rich product cards with images, prices, and details
-- **Smart Shopping Cart**: Intelligent cart management with automatic product addition
-- **Cart Context Awareness**: AI provides cart-aware responses
-- **Order Processing**: Seamless checkout experience
-- **Purchase History**: Track and manage past orders
+### 🛍️ Advanced E-commerce Intelligence
+- **Knowledge-Driven Recommendations**: Uses embedded catalog knowledge to suggest perfect product matches
+- **Natural Sales Conversations**: Mimics expert sales associate interactions with product expertise
+- **Context-Aware Upselling**: Suggests complementary products based on conversation context and embedded knowledge
+- **Intelligent Cross-selling**: Recommends related items using deep product relationship understanding
+- **Dynamic Pricing Context**: AI understands pricing, promotions, and value propositions from embedded data
+- **Inventory-Aware Responses**: Seamlessly handles stock levels and availability in natural conversation
 
-### 🎨 Enhanced User Experience
-- **Modern Interface**: Clean, intuitive design
-- **Responsive Design**: Works perfectly on desktop and mobile
-- **Dark Mode**: Automatic theme switching
-- **Real-time Updates**: Live chat and cart updates
-- **Product Modals**: Detailed product views
-- **Loading States**: Smooth loading animations
-- **Error Handling**: Graceful error management
+### 🎯 Conversion Rate Optimization
+- **Purchase Intent Detection**: Advanced AI recognizes buying signals and responds appropriately
+- **Objection Handling**: AI addresses customer concerns using embedded product knowledge and benefits
+- **Urgency Creation**: Natural conversation techniques to encourage purchase decisions
+- **Trust Building**: Builds confidence through knowledgeable, helpful responses
+- **Personalized Persuasion**: Adapts selling approach based on customer communication style
+- **Seamless Purchase Path**: Guides customers from inquiry to purchase naturally
 
-### 🔒 Security & Performance
-- **JWT Authentication**: Secure user sessions
-- **CORS Protection**: Cross-origin request security
-- **Input Validation**: Comprehensive data validation
-- **Error Handling**: Graceful error management
-- **Performance Optimization**: Fast loading and response times
-- **Caching**: Intelligent caching for better performance
-- **Rate Limiting**: API rate limiting for security
+### 🚀 Enhanced Performance & User Experience
+- **Instant Knowledge Access**: No API delays for product information - everything is embedded in AI knowledge
+- **Natural Response Speed**: Human-like conversation timing for better engagement
+- **Context Preservation**: Maintains conversation context across sessions for personalized experience
+- **Mobile-Optimized Conversations**: Natural chat experience across all devices
+- **Real-time Cart Integration**: Seamless shopping cart management within conversation flow
+- **Emotional Intelligence**: AI recognizes and responds to customer emotions appropriately
 
-## 🎯 Use Cases
+## 🎯 Enhanced Use Cases
 
-### 1. E-commerce Customer Support
-**Scenario**: Customer needs help finding specific products
-- **Input**: "I'm looking for a blue dress for a wedding"
-- **AI Response**: Asks clarifying questions about size, style, budget
-- **Output**: Shows relevant dresses with detailed information
-- **Action**: Customer can add to cart or ask for alternatives
+### 1. Expert Sales Consultation
+**Scenario**: Customer seeks product advice like talking to an expert
+- **Input**: "I need something elegant for a business dinner"
+- **AI Knowledge Response**: AI uses embedded catalog knowledge to understand available elegant options, price ranges, and styling details
+- **Natural Output**: "I'd love to help you find the perfect elegant piece! For business dinners, I'm thinking of our sophisticated collection. Are you leaning more toward a classic blazer with tailored pants, or perhaps an elegant dress? I have some beautiful options in mind that would be perfect for your occasion."
+- **Conversion Enhancement**: Builds trust through expertise, guides toward specific products naturally
 
-### 2. Product Discovery
-**Scenario**: Customer wants to explore new products
-- **Input**: "What's trending in your store?"
-- **AI Response**: Shows popular/featured products
-- **Output**: Curated product recommendations
-- **Action**: Customer discovers new items they might like
+### 2. Intelligent Product Discovery
+**Scenario**: Customer explores without specific product in mind
+- **Input**: "Show me what's new and exciting"
+- **AI Knowledge Response**: Uses embedded knowledge of featured products, trends, and customer preferences
+- **Natural Output**: "Oh, you're in for a treat! We just launched some incredible pieces that our customers are absolutely loving. There's this stunning collection that's been flying off our shelves - let me show you a few standouts that I think you'll fall in love with..."
+- **Conversion Enhancement**: Creates excitement, builds anticipation, uses social proof naturally
 
-### 3. Sales Consultation
-**Scenario**: Customer needs personalized recommendations
-- **Input**: "I need workout clothes for the gym"
-- **AI Response**: Asks about preferences, size, budget
-- **Output**: Personalized product suggestions
-- **Action**: Customer gets tailored recommendations
+### 3. Problem-Solution Conversations
+**Scenario**: Customer has specific need or problem to solve
+- **Input**: "My old gym clothes are falling apart, I need a complete overhaul"
+- **AI Knowledge Response**: AI understands full activewear catalog, durability features, and customer needs
+- **Natural Output**: "I totally understand that frustration! Let's get you set up with pieces that will actually last. I'm thinking we build you a complete set with our performance line - they're designed for durability and comfort. What's your primary workout style? I want to make sure we get you exactly what you need."
+- **Conversion Enhancement**: Shows empathy, positions as problem-solver, guides toward comprehensive purchase
 
-### 4. Shopping Assistance
-**Scenario**: Customer needs help with product details
-- **Input**: "What's the difference between these two jackets?"
-- **AI Response**: Compares products side-by-side
-- **Output**: Detailed comparison with pros/cons
-- **Action**: Customer makes informed decision
+### 4. Comparison Shopping Assistant
+**Scenario**: Customer wants to compare similar products
+- **Input**: "What's better between these two dresses?"
+- **AI Knowledge Response**: Deep product knowledge allows detailed, nuanced comparisons
+- **Natural Output**: "Great question! Both are beautiful, but they serve different occasions perfectly. The midnight blue has this gorgeous flowing silhouette that's incredibly flattering and versatile - you could dress it up or down easily. The burgundy has more structured detailing that gives it a sophisticated edge, perfect for formal events. Based on what you've mentioned, I'm leaning toward the blue for you - here's why..."
+- **Conversion Enhancement**: Provides expert analysis, makes personalized recommendation, reduces decision paralysis
 
-### 5. Order Management
-**Scenario**: Customer wants to track or modify orders
-- **Input**: "Where is my order?"
-- **AI Response**: Provides order status and tracking
-- **Output**: Real-time order information
-- **Action**: Customer stays informed about their purchase
+### 5. Objection Handling & Trust Building
+**Scenario**: Customer expresses concerns or hesitation
+- **Input**: "I'm not sure about the price, seems expensive"
+- **AI Knowledge Response**: Understands product value, materials, quality, and competitive positioning
+- **Natural Output**: "I completely understand wanting to make sure you're getting great value - that's smart shopping! Let me share why this piece is priced where it is. The fabric is premium organic cotton that actually gets softer with each wash, the construction uses reinforced stitching that prevents wear, and honestly, customers tell us they've had pieces from this line for years. When you break it down per wear, it's actually quite economical. Plus, we have a satisfaction guarantee because we're that confident you'll love it."
+- **Conversion Enhancement**: Validates concerns, provides detailed value justification, offers risk reduction
 
-### 6. Smart Cart Management
-**Scenario**: Customer expresses intent to buy
-- **Input**: "I want the burgundy tee"
-- **AI Response**: "Perfect choice! I've added the Classic Burgundy Tee to your cart!"
-- **Output**: Product automatically added to cart
-- **Action**: Seamless shopping experience
+### 6. Seamless Cart Management with Context
+**Scenario**: Customer expresses purchase intent during conversation
+- **Input**: "I love that burgundy tee and the matching cardigan"
+- **AI Knowledge Response**: Understands products, styling, and creates natural purchase progression
+- **Natural Output**: "Perfect taste! The burgundy tee and cardigan are a match made in heaven - they look absolutely stunning together. I've added both to your cart, and I'm also thinking these would look amazing with our new denim that just came in. The whole outfit would be effortlessly chic. Want to see the complete look?"
+- **Conversion Enhancement**: Confirms choices, adds items naturally, suggests complementary pieces, builds outfit concept
 
 ## 🚀 Setup Instructions
 
@@ -215,14 +219,17 @@ Before you begin, ensure you have the following installed:
 
 ### Required Accounts & API Keys
 
-1. **Sensay AI Account**
+1. **Sensay AI Account with Knowledge Database Setup**
    - Sign up at [Sensay AI](https://sensay.io)
    - Get your API key and Organization ID
    - Create a replica for your shopping assistant
+   - **Important**: Upload your complete Shopify catalog to Sensay's knowledge database
+   - Configure knowledge base with product descriptions, categories, pricing, and store information
 
 2. **Shopify Store**
    - Create a Shopify store or use existing one
    - Generate Storefront and Admin API tokens
+   - Export product catalog for Sensay knowledge database integration
 
 3. **Database**
    - Set up PostgreSQL database (local or cloud)
@@ -257,10 +264,10 @@ Create a `.env.local` file in the `backend-nextjs` directory:
 # Database Configuration
 DATABASE_URL="postgresql://username:password@localhost:5432/sensay_shop"
 
-# Sensay AI Configuration
+# Sensay AI Configuration with Knowledge Database
 SENSAY_API_KEY="your_sensay_api_key_here"
 SENSAY_ORG_ID="your_sensay_org_id_here"
-SENSAY_REPLICA_UUID="your_replica_uuid_here"
+SENSAY_REPLICA_UUID="your_replica_uuid_with_shopify_knowledge"
 
 # Shopify Configuration
 SHOPIFY_STORE_NAME="your-store-name"
@@ -275,7 +282,27 @@ PORT=3001
 NODE_ENV=development
 ```
 
-#### 4. Database Setup
+#### 4. Shopify Knowledge Database Setup
+
+**Important Step**: Before running the application, ensure your Shopify catalog is integrated into Sensay's knowledge database:
+
+1. **Export Shopify Data**:
+   - Export complete product catalog from Shopify
+   - Include product descriptions, variants, pricing, categories
+   - Export store policies, brand information, and FAQs
+
+2. **Upload to Sensay Knowledge Database**:
+   - Access your Sensay replica dashboard
+   - Upload all product information to the knowledge base
+   - Configure product categories and relationships
+   - Add store-specific information and policies
+
+3. **Test Knowledge Integration**:
+   - Use Sensay's testing interface to verify AI can recall product information
+   - Test natural language queries about your products
+   - Ensure AI responds with accurate product details
+
+#### 5. Database Setup
 
 ```bash
 cd backend-nextjs
@@ -290,7 +317,7 @@ npx prisma migrate deploy
 npx prisma studio
 ```
 
-#### 5. Build the Application
+#### 6. Build the Application
 
 ```bash
 # Build backend
@@ -303,7 +330,7 @@ npm run build
 cd ..
 ```
 
-#### 6. Start the Application
+#### 7. Start the Application
 
 **Development Mode:**
 
@@ -327,12 +354,81 @@ npm start
 # Frontend is already built and served
 ```
 
-#### 7. Access the Application
+#### 8. Access the Application
 
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3000
 - **API Health Check**: http://localhost:3000/api/health
 - **API Documentation**: http://localhost:3000/
+
+## 🧑‍💻 Enhanced Sensay AI Configuration
+
+### Knowledge Database Integration
+
+The revolutionary aspect of Shoppy Sensay lies in its deep integration between Sensay AI and your Shopify store through embedded knowledge:
+
+#### Key Components:
+- **Complete Product Catalog**: Every product, variant, description, and specification embedded in AI knowledge
+- **Natural Language Understanding**: AI understands your products like a human sales expert
+- **Contextual Responses**: Responses draw from embedded knowledge for instant, accurate information
+- **Conversion Optimization**: AI trained on your specific products to drive sales naturally
+- **Real-time Synchronization**: Live updates between Shopify and knowledge base
+
+#### Configuration Steps:
+
+1. **Initial Setup**:
+   ```bash
+   # Access Sensay Dashboard
+   # Create new replica with e-commerce template
+   # Configure for shopping assistant use case
+   ```
+
+2. **Knowledge Base Preparation**:
+   - Export complete Shopify catalog
+   - Prepare product descriptions and specifications
+   - Include brand story, policies, and FAQs
+   - Format data for optimal AI understanding
+
+3. **Knowledge Upload Process**:
+   - Upload product catalog to Sensay knowledge base
+   - Configure product relationships and categories
+   - Add store-specific information and policies
+   - Test knowledge recall and accuracy
+
+4. **AI Training & Optimization**:
+   - Train AI on natural sales conversations
+   - Configure conversion-focused response patterns
+   - Set up personalization parameters
+   - Test and refine responses for your brand voice
+
+5. **Integration Testing**:
+   ```bash
+   # Test knowledge integration
+   curl -X POST http://localhost:3000/api/chat/send \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <your-token>" \
+     -d '{
+       "message": "Tell me about your best-selling dress",
+       "isNewChat": true
+     }'
+   ```
+
+### Benefits of Knowledge Database Integration:
+
+#### 🚀 **Performance Enhancement**:
+- **Instant Responses**: No API delays for product information
+- **Rich Context**: AI has complete product knowledge instantly available
+- **Natural Flow**: Conversations flow naturally without interruptions
+
+#### 🎯 **Conversion Optimization**:
+- **Expert-Level Responses**: AI responds like a knowledgeable sales associate
+- **Contextual Upselling**: Natural product suggestions based on embedded knowledge
+- **Objection Handling**: AI addresses concerns using product knowledge
+
+#### 🤖 **AI Intelligence**:
+- **Deep Understanding**: AI truly understands your products, not just keywords
+- **Natural Conversations**: Responses feel human and contextual
+- **Personalized Recommendations**: AI considers full product range for suggestions
 
 ## 📚 API Documentation
 
@@ -340,108 +436,77 @@ npm start
 - **Development**: `http://localhost:3000/api`
 - **Production**: `https://sensay-terbaru.vercel.app/api`
 
-### Authentication Endpoints
+### Enhanced Chat Endpoints
 
-| Method | Endpoint | Description | Body |
-|--------|----------|-------------|------|
-| POST | `/auth/register` | Register new user | `{email, username, password}` |
-| POST | `/auth/login` | User login | `{emailOrUsername, password}` |
-| GET | `/auth/me` | Get current user | Headers: `Authorization: Bearer <token>` |
+| Method | Endpoint | Description | Body | Response Enhancement |
+|--------|----------|-------------|------|---------------------|
+| POST | `/chat/send` | Send message to AI with knowledge | `{message, isNewChat?, sessionId?}` | Natural responses using embedded Shopify knowledge |
+| GET | `/chat/history` | Get conversation history | Query: `sessionId?` | Full context with product recommendations |
+| GET | `/chat/sessions` | Get chat sessions | - | Sessions with conversion tracking |
 
-### Chat Endpoints
+### Enhanced Response Examples
 
-| Method | Endpoint | Description | Body |
-|--------|----------|-------------|------|
-| POST | `/chat/send` | Send message to AI | `{message, isNewChat?, sessionId?}` |
-| GET | `/chat/history` | Get chat history | Query: `sessionId?` |
-| GET | `/chat/sessions` | Get chat sessions | - |
-
-### Cart Endpoints
-
-| Method | Endpoint | Description | Body |
-|--------|----------|-------------|------|
-| GET | `/cart` | Get user cart | - |
-| POST | `/cart/add` | Add product to cart | `{productId, productName, price, quantity, ...}` |
-| PUT | `/cart/[itemId]` | Update cart item | `{quantity}` |
-| DELETE | `/cart/[itemId]` | Remove cart item | - |
-| DELETE | `/cart` | Clear entire cart | - |
-| GET | `/cart/count` | Get cart count | - |
-
-### Shopify Endpoints
-
-| Method | Endpoint | Description | Body |
-|--------|----------|-------------|------|
-| GET | `/shopify/featured` | Get featured products | Query: `limit?` |
-| GET | `/shopify/product/[handle]` | Get product details | - |
-| POST | `/shopify/search` | Search products | `{query, limit?}` |
-
-### Purchase History Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/purchases` | Get purchase history |
-
-### System Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/` | API information |
-
-### Example API Calls
-
-#### Register User
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "username": "johndoe",
-    "password": "securepassword"
-  }'
+#### Natural Product Inquiry
+```json
+{
+  "message": "I need something comfortable for working from home",
+  "response": "I love that you're prioritizing comfort for your work-from-home setup! I have some perfect pieces in mind that'll keep you looking polished on video calls while feeling cozy all day. Our soft lounge collection has been a customer favorite - especially the bamboo blend pieces that are breathable and wrinkle-resistant. Would you like to see some tops, bottoms, or maybe a complete comfortable outfit?",
+  "recommendations": [
+    {
+      "id": "prod123",
+      "name": "Bamboo Blend Comfort Top",
+      "reason": "Perfect for video calls, ultra-soft, professional look"
+    }
+  ],
+  "conversationIntent": "product_discovery",
+  "conversionScore": 8.5
+}
 ```
 
-#### Send Chat Message
-```bash
-curl -X POST http://localhost:3000/api/chat/send \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{
-    "message": "I need a blue dress for a wedding",
-    "isNewChat": true
-  }'
-```
-
-#### Search Products
-```bash
-curl -X POST http://localhost:3000/api/shopify/search \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{
-    "query": "blue dress",
-    "limit": 5
-  }'
+#### Knowledge-Powered Product Comparison
+```json
+{
+  "message": "Compare your two bestselling jeans",
+  "response": "Great question! Our two bestsellers are definitely the Classic Fit and the Stretch Comfort styles, and they each have their devoted fans for good reasons. The Classic Fit uses premium denim with a timeless cut that looks incredible and lasts for years - customers love how they hold their shape. The Stretch Comfort has 2% elastane for all-day comfort and movement, perfect if you're active or prefer a more forgiving fit. Both come in the same wash options. Based on what you've mentioned about comfort, I'm thinking the Stretch Comfort might be perfect for you - want to see them?",
+  "products": [
+    {
+      "id": "jeans_classic",
+      "highlights": ["Premium denim", "Timeless cut", "Shape retention"]
+    },
+    {
+      "id": "jeans_stretch", 
+      "highlights": ["2% elastane", "All-day comfort", "Active lifestyle"]
+    }
+  ],
+  "recommendation": "jeans_stretch",
+  "conversionTactic": "personalized_recommendation"
+}
 ```
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended)
+### Vercel Deployment with Knowledge Database
 
 #### Backend Deployment
 
-1. **Connect to Vercel**:
+1. **Ensure Knowledge Database is Configured**:
+   - Verify Sensay replica has complete Shopify knowledge
+   - Test AI responses using Sensay dashboard
+   - Confirm knowledge base is production-ready
+
+2. **Deploy Backend**:
    ```bash
    npm install -g vercel
    vercel login
    vercel
    ```
 
-2. **Set Environment Variables** in Vercel Dashboard:
+3. **Set Environment Variables** in Vercel Dashboard:
    ```
    DATABASE_URL=your_production_database_url
    SENSAY_API_KEY=your_sensay_api_key
    SENSAY_ORG_ID=your_sensay_org_id
-   SENSAY_REPLICA_UUID=your_replica_uuid
+   SENSAY_REPLICA_UUID=your_replica_with_shopify_knowledge
    SHOPIFY_STORE_NAME=your-store-name
    SHOPIFY_STOREFRONT_TOKEN=your_shopify_storefront_token
    SHOPIFY_ADMIN_TOKEN=your_shopify_admin_token
@@ -449,166 +514,25 @@ curl -X POST http://localhost:3000/api/shopify/search \
    NODE_ENV=production
    ```
 
-3. **Deploy**:
-   ```bash
-   git push origin main
-   ```
+#### Knowledge Database Verification
 
-#### Frontend Deployment
-
-1. **Deploy Frontend**:
-   ```bash
-   cd frontend
-   vercel
-   ```
-
-2. **Update API URL** in production environment
-
-### Environment Variables for Production
-
-Ensure all environment variables are properly configured:
-
-```env
-# Database
-DATABASE_URL=postgresql://user:pass@host:port/db
-
-# Sensay AI
-SENSAY_API_KEY=your_production_api_key
-SENSAY_ORG_ID=your_sensay_org_id
-SENSAY_REPLICA_UUID=your_replica_uuid
-
-# Shopify
-SHOPIFY_STORE_NAME=your-store-name
-SHOPIFY_STOREFRONT_TOKEN=your_production_storefront_token
-SHOPIFY_ADMIN_TOKEN=your_production_admin_token
-
-# Security
-JWT_SECRET=your_secure_jwt_secret
-
-# Server
-NODE_ENV=production
-```
-
-## 🧑‍💻 Sensay API Configuration
-
-### API Integration
-The Sensay AI integration provides:
-- Natural language processing for customer queries
-- Intelligent product recommendation algorithms
-- Context-aware conversation management
-- Learning capabilities for improved responses
-- Smart cart intent detection
-- General information filtering
-
-### Configuration Steps
-1. Sign up for a Sensay AI account
-2. Get your API key and Organization ID from the dashboard
-3. Create a replica for your shopping assistant
-4. Configure the API keys in your environment variables
-
-## 🏗️ Project Structure
-
-```
-sensay-shop/
-├── 📁 backend-nextjs/              # Next.js backend
-│   ├── 📁 src/
-│   │   ├── 📁 app/                 # Next.js app router
-│   │   │   ├── 📁 api/             # API routes
-│   │   │   │   ├── 🔐 auth/        # Authentication endpoints
-│   │   │   │   ├── 💬 chat/        # Chat endpoints
-│   │   │   │   ├── 🛒 cart/        # Cart endpoints
-│   │   │   │   ├── 🛍️ shopify/    # Shopify endpoints
-│   │   │   │   └── 📦 purchases/   # Purchase endpoints
-│   │   │   └── 📄 layout.tsx       # Root layout
-│   │   ├── 📁 lib/                 # Backend libraries
-│   │   │   ├── 🔐 auth.ts         # Authentication logic
-│   │   │   ├── 🗄️ database.ts    # Database connection
-│   │   │   ├── 🤖 sensay-service.ts # Sensay AI integration
-│   │   │   ├── 🛍️ shopify-service.ts # Shopify integration
-│   │   │   ├── 💾 cache.ts       # Cache service
-│   │   │   └── 📋 types.ts       # TypeScript types
-│   │   └── 📄 globals.css         # Global styles
-│   ├── 📁 prisma/                  # Database schema
-│   │   ├── 📄 schema.prisma       # Database schema
-│   │   └── 📁 migrations/         # Database migrations
-│   └── 📄 package.json            # Backend dependencies
-├── 📁 frontend/                    # React frontend
-│   ├── 📁 src/
-│   │   ├── 📁 components/         # React components
-│   │   │   ├── 💬 ChatArea.tsx   # Chat interface
-│   │   │   ├── 🛒 CartPanel.tsx  # Shopping cart
-│   │   │   ├── 🏠 LandingPage.tsx # Landing page
-│   │   │   └── 📦 ProductCard.tsx # Product display
-│   │   ├── 📁 services/           # API services
-│   │   │   └── 🌐 api.ts         # API client
-│   │   └── 📁 utils/              # Utility functions
-│   └── 📁 public/                 # Static assets
-│       └── 🖼️ ShoppyS logo .png  # Logo files
-├── 📄 package.json                 # Root dependencies
-├── 📄 vercel.json                  # Vercel configuration
-└── 📄 README.md                    # This file
-```
-
-## 🔧 Development
-
-### Available Scripts
-
-#### Backend Scripts
-```bash
-cd backend-nextjs
-npm run dev          # Start development server with auto-reload
-npm run build        # Build for production
-npm start            # Start production server
-npm run db:generate  # Generate Prisma client
-npm run db:push      # Push schema to database
-npm run db:studio    # Open Prisma Studio
-```
-
-#### Frontend Scripts
-```bash
-cd frontend
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-```
-
-### Development Workflow
-
-1. **Feature Development**:
-   ```bash
-   git checkout -b feature/new-feature
-   # Make changes
-   git add .
-   git commit -m "Add new feature"
-   git push origin feature/new-feature
-   ```
-
-2. **Testing**:
-   ```bash
-   # Test backend
-   cd backend-nextjs
-   npm test
-   
-   # Test frontend
-   cd frontend
-   npm test
-   ```
-
-3. **Code Quality**:
-   ```bash
-   # Lint backend
-   cd backend-nextjs
-   npm run lint
-   
-   # Lint frontend
-   cd frontend
-   npm run lint
-   ```
+Before going live, verify:
+- ✅ All products are in Sensay knowledge base
+- ✅ AI can recall product details accurately
+- ✅ Responses are natural and conversion-focused
+- ✅ Knowledge base updates with inventory changes
 
 ## 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
+
+### Areas for Enhancement
+
+- **Knowledge Base Optimization**: Improve product knowledge structure
+- **Conversation Flow**: Enhance natural conversation patterns
+- **Conversion Analytics**: Add conversion tracking and optimization
+- **Personalization**: Improve customer preference learning
+- **Mobile Experience**: Enhance mobile conversation interface
 
 ### 1. Fork the Repository
 ```bash
@@ -616,89 +540,39 @@ git clone https://github.com/your-username/sensay-shop.git
 cd sensay-shop
 ```
 
-### 2. Create a Feature Branch
-```bash
-git checkout -b feature/amazing-feature
-```
-
-### 3. Make Your Changes
-- Write clean, readable code
-- Add tests for new features
-- Update documentation as needed
-- Follow the existing code style
-
-### 4. Commit Your Changes
-```bash
-git add .
-git commit -m "Add amazing feature"
-```
-
-### 5. Push to Your Branch
-```bash
-git push origin feature/amazing-feature
-```
-
-### 6. Open a Pull Request
-- Provide a clear description of your changes
-- Reference any related issues
-- Request review from maintainers
-
-### Contribution Guidelines
-
-- **Code Style**: Follow TypeScript and React best practices
-- **Testing**: Add tests for new features and bug fixes
-- **Documentation**: Update README and code comments
-- **Commits**: Use clear, descriptive commit messages
-- **Issues**: Check existing issues before creating new ones
+### 2. Set Up Knowledge Database
+- Configure test Sensay replica with sample product data
+- Test AI responses with your knowledge integration
+- Document any knowledge structure improvements
 
 ## 🆘 Support
 
 ### Getting Help
 
-- **Documentation**: Check this README and inline code comments
-- **Issues**: Search existing issues or create a new one
-- **Discussions**: Use GitHub Discussions for questions
-- **Email**: Contact the development team
+- **Knowledge Base Issues**: Check Sensay dashboard for knowledge integration status
+- **AI Response Quality**: Test and refine in Sensay replica interface before deployment
+- **Conversion Optimization**: Analyze conversation flows and response effectiveness
 
 ### Common Issues
 
-#### Database Connection Issues
+#### Knowledge Database Integration Issues
 ```bash
-# Check database connection
-cd backend-nextjs
-npx prisma db push
-
-# Reset database
-npx prisma migrate reset
+# Verify knowledge base status
+# Check Sensay replica dashboard
+# Test AI knowledge recall manually
 ```
 
-#### API Key Issues
-- Verify your Sensay API key is correct
-- Check Shopify tokens are valid
-- Ensure environment variables are set
+#### AI Response Quality Issues
+- Review knowledge base structure in Sensay dashboard
+- Test specific product queries in replica interface
+- Refine knowledge organization for better AI understanding
+- Check for incomplete product information in knowledge base
 
-#### Build Issues
-```bash
-# Clear node_modules and reinstall
-cd backend-nextjs
-rm -rf node_modules package-lock.json
-npm install
-
-# Clear frontend dependencies
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### Reporting Bugs
-
-When reporting bugs, please include:
-- **Environment**: OS, Node.js version, browser
-- **Steps to Reproduce**: Clear, numbered steps
-- **Expected Behavior**: What should happen
-- **Actual Behavior**: What actually happens
-- **Screenshots**: If applicable
-- **Error Messages**: Full error logs
+#### Conversion Rate Concerns
+- Analyze conversation flows for drop-off points
+- Test different response patterns for better engagement
+- Review AI responses for natural sales conversation flow
+- Optimize knowledge base for conversion-focused responses
 
 ## 📄 License
 
@@ -706,8 +580,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Sensay AI** - For providing the intelligent conversation engine
-- **Shopify** - For the comprehensive e-commerce API
+- **Sensay AI** - For providing the revolutionary knowledge database integration and intelligent conversation engine
+- **Shopify** - For the comprehensive e-commerce API and seamless catalog integration
 - **React Team** - For the amazing frontend framework
 - **Next.js Team** - For the powerful full-stack framework
 - **Open Source Contributors** - For the amazing tools and libraries
@@ -716,11 +590,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
   <p>
-    <strong>Built with ❤️ using React, Next.js, and Sensay AI</strong>
+    <strong>Built with ❤️ using React, Next.js, and Sensay AI Knowledge Database Integration</strong>
   </p>
   <p>
-    <a href="https://sensay-terbaru.vercel.app">Live Demo</a> •
-    <a href="https://github.com/e/sensay-shop/issues">Report Bug</a> •
-    <a href="https://github.com/your-username/sensay-shop/discussions">Request Feature</a>
+    <em>Revolutionizing e-commerce through natural AI conversations with embedded product knowledge</em>
+  </p>
+  <p>
+    <a href="https://shoppy-s-ai-apc2.vercel.app/">Live Demo</a> •
+    <a href="https://github.com/e/ShoppyS-Ai/issues">Report Bug</a> •
+    <a href="https://github.com/envexx/ShoppyS-Ai/discussions">Request Feature</a>
   </p>
 </div>
